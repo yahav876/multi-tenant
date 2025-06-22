@@ -42,12 +42,12 @@ resource "helm_release" "grafana" {
         accessModes      = ["ReadWriteOnce"]
       }
       
-      # Service configuration
+      # Service configuration - Use ClusterIP when using Ingress
       service = {
-        type = "LoadBalancer"
-        annotations = {
+        type = var.service_type
+        annotations = var.service_type == "LoadBalancer" ? {
           "cloud.google.com/load-balancer-type" = var.load_balancer_type
-        }
+        } : {}
       }
       
       # Resources

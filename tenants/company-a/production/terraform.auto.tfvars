@@ -86,3 +86,12 @@ common_labels = {
   cost_center = "engineering"
 }
 
+# === INGRESS CONFIGURATION ===
+# Set to true to use Ingress with GCP Load Balancer instead of LoadBalancer service
+use_ingress = true
+
+# Grafana Ingress Configuration
+grafana_enable_ssl   = true
+grafana_ssl_domains  = ["grafana.example.com"]  # REPLACE with your domain
+grafana_lb_type      = "External"               # Change to "Internal" for internal-only access
+

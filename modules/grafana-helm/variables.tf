@@ -85,9 +85,19 @@ variable "node_selector" {
 }
 
 variable "load_balancer_type" {
-  description = "Load balancer type for Grafana service"
+  description = "Load balancer type for Grafana service (used when service_type is LoadBalancer)"
   type        = string
   default     = "Internal"
+}
+
+variable "service_type" {
+  description = "Kubernetes service type (LoadBalancer or ClusterIP). Use ClusterIP when using Ingress."
+  type        = string
+  default     = "LoadBalancer"
+  validation {
+    condition     = contains(["LoadBalancer", "ClusterIP"], var.service_type)
+    error_message = "service_type must be either 'LoadBalancer' or 'ClusterIP'."
+  }
 }
 
 variable "labels" {

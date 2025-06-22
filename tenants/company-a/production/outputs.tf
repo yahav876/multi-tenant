@@ -104,12 +104,46 @@ output "kubectl_config_command" {
 
 output "grafana_access_info" {
   description = "Instructions for accessing Grafana"
-  value = {
+  value = var.use_ingress ? {
+    username = module.grafana.admin_user
+    password_note = "Password is set in terraform.tfvars"
+    url = var.grafana_enable_ssl && length(var.grafana_ssl_domains) > 0 ? "https://${var.grafana_ssl_domains[0]}" : "http://${module.grafana_ingress[0].static_ip_address}"
+    static_ip = module.grafana_ingress[0].static_ip_address
+    ssl_certificate = var.grafana_enable_ssl ? module.grafana_ingress[0].ssl_certificate_name : null
+  } : {
     username = module.grafana.admin_user
     password_note = "Password is set in terraform.tfvars"
     loadbalancer_ip_command = "kubectl get svc grafana -n ${module.prometheus.namespace} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'"
     port_forward_command = "kubectl port-forward -n ${module.prometheus.namespace} svc/grafana 3000:80"
   }
+}
+
+# Additional ingress outputs when using ingress
+output "grafana_ingress_info" {
+  description = "Grafana ingress information (only when use_ingress = true)"
+  value = var.use_ingress ? {
+    static_ip_address = module.grafana_ingress[0].static_ip_address
+    ingress_name = module.grafana_ingress[0].ingress_name
+    ssl_enabled = var.grafana_enable_ssl
+    ssl_domains = var.grafana_ssl_domains
+    load_balancer_type = var.grafana_lb_type
+    dns_setup_required = length(var.grafana_ssl_domains) > 0
+  } : null
+}
+
+output "dns_setup_instructions" {
+  description = "DNS setup instructions for SSL certificates"
+  value = var.use_ingress && length(var.grafana_ssl_domains) > 0 ? {
+    message = "To complete SSL certificate setup, create DNS A records:"
+    records = [
+      for domain in var.grafana_ssl_domains : {
+        domain = domain
+        type = "A"
+        value = module.grafana_ingress[0].static_ip_address
+      }
+    ]
+    note = "SSL certificates will be active 15-20 minutes after DNS propagation"
+  } : null
 }
 
 # Summary Information

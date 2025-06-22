@@ -225,6 +225,7 @@ module "grafana" {
   # Infrastructure configuration
   storage_class      = var.storage_class
   node_selector      = var.node_selector
+  service_type       = var.use_ingress ? "ClusterIP" : "LoadBalancer"
   load_balancer_type = var.load_balancer_type
   labels             = local.common_labels
   
@@ -234,4 +235,75 @@ module "grafana" {
   # Don't create namespace, use the one from Prometheus module
   create_namespace = false
   depends_on = [module.prometheus, kubernetes_namespace.monitoring]
+}
+
+# GCP Load Balancer + Ingress for Grafana
+module "grafana_ingress" {
+  count  = var.use_ingress ? 1 : 0
+  source = "../../../modules/gcp-lb-ingress"
+  
+  # Basic Configuration
+  project_id   = var.gcp_project_id
+  name_prefix  = "${var.company}-${var.environment}-grafana"
+  namespace    = var.monitoring_namespace
+  network_name = module.vpc.network_name
+  
+  # SSL Configuration
+  enable_ssl             = var.grafana_enable_ssl
+  ssl_domains            = var.grafana_ssl_domains
+  allow_http             = !var.grafana_enable_ssl
+  redirect_http_to_https = var.grafana_enable_ssl
+  
+  # Ingress Rules - Route all traffic to Grafana service
+  ingress_rules = [
+    {
+      host = length(var.grafana_ssl_domains) > 0 ? var.grafana_ssl_domains[0] : ""
+      paths = [
+        {
+          path         = "/*"
+          path_type    = "ImplementationSpecific"
+          service_name = "grafana"
+          service_port = 80
+        }
+      ]
+    }
+  ]
+  
+  # Security Configuration - Restrict access to authorized networks
+  authorized_source_ranges = var.authorized_networks
+  target_tags             = ["gke-node", "${var.company}-${var.environment}"]
+  
+  # Load Balancer Configuration
+  load_balancer_type = var.grafana_lb_type
+  create_static_ip   = true
+  
+  # Advanced Backend Configuration
+  create_backend_config           = true
+  backend_timeout                 = 60
+  connection_draining_timeout     = 60
+  session_affinity_type          = "CLIENT_IP"  # Good for Grafana sessions
+  session_affinity_cookie_ttl    = 86400       # 24 hours
+  
+  # Health Check Configuration
+  health_check_path               = "/api/health"
+  health_check_port               = 80
+  health_check_interval           = 10
+  health_check_timeout            = 5
+  health_check_healthy_threshold  = 2
+  health_check_unhealthy_threshold = 3
+  health_check_type              = "HTTP"
+  
+  # Security
+  create_health_check_firewall   = true
+  create_access_firewall         = true
+  
+  # Labels
+  labels = merge(local.common_labels, {
+    component = "monitoring"
+    app       = "grafana"
+    tier      = "frontend"
+  })
+  
+  # Dependencies
+  depends_on = [module.grafana, module.vpc]
 }
