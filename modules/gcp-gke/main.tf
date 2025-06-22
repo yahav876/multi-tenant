@@ -50,4 +50,7 @@ module "gke" {
 
   # Workload Identity for secure access to GCP services
   identity_namespace = var.identity_namespace
+  
+  # Control deletion protection
+  deletion_protection = var.deletion_protection
 }

@@ -140,3 +140,9 @@ variable "identity_namespace" {
   description = "Identity namespace for workload identity"
   type        = string
 }
+
+variable "deletion_protection" {
+  description = "Whether or not to allow the cluster to be deleted"
+  type        = bool
+  default     = false
+}

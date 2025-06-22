@@ -109,7 +109,7 @@ module "gke" {
       local_ssd_count    = 0
       spot               = false
       disk_size_gb       = var.node_disk_size
-      disk_type          = "pd-ssd"
+      disk_type          = "pd-standard"
       image_type         = "COS_CONTAINERD"
       enable_gcfs        = false
       enable_gvnic       = false
@@ -144,6 +144,9 @@ module "gke" {
   node_pools_tags = {
     all = ["gke-node", "${var.company}-${var.environment}"]
   }
+
+  # Set deletion_protection to false to allow the cluster to be destroyed
+  deletion_protection = false
 
   depends_on = [module.vpc]
 }

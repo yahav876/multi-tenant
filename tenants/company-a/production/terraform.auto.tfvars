@@ -6,8 +6,8 @@ company     = "company-a"
 environment = "production"
 
 gcp_project_id = "multi-tenant-dataloop"
-gcp_region     = "us-central1"
-gcp_zone       = "us-central1-a"
+gcp_region     = "us-west1"
+gcp_zone       = "us-west1-a"
 
 # === NETWORK CONFIGURATION ===
 subnet_cidr    = "10.0.0.0/24"
@@ -16,16 +16,15 @@ services_cidr  = "10.2.0.0/16"
 
 # Authorized networks for GKE master access (IMPORTANT: Restrict to your IP ranges)
 authorized_networks = [
-  "203.0.113.0/24",  # Example: Your office network
-  "198.51.100.0/24"  # Example: Your VPN network
+  "5.29.9.128/32"    # Your current IP address
 ]
 
 # === GKE CLUSTER CONFIGURATION ===
-node_machine_type    = "e2-standard-4"  # 4 vCPUs, 16GB RAM - production ready
-min_nodes            = 3                # Minimum nodes for HA
-max_nodes            = 10               # Maximum nodes for scaling
-node_disk_size       = 100              # GB per node
-initial_node_count   = 3                # Starting number of nodes
+node_machine_type    = "e2-micro"  #e2-medium	     # 2 vCPUs, 4GB RAM - production ready
+min_nodes            = 1                # Start with 1 node total (regional)
+max_nodes            = 3               # Can scale to 3 nodes later
+node_disk_size       = 20              # GB per node
+initial_node_count   = 1                # Start with just 1 node initially
 
 # Optional: Use existing service account for GKE nodes
 #gke_service_account_email = "gke-nodes@your-project.iam.gserviceaccount.com"
@@ -39,9 +38,9 @@ monitoring_namespace = "monitoring"
 # Prometheus settings
 prometheus_chart_version  = "56.0.0"
 prometheus_retention      = "30d"
-prometheus_storage_size   = "50Gi"
-prometheus_cpu_request    = "500m"
-prometheus_memory_request = "2Gi"
+prometheus_storage_size   = "10Gi"
+prometheus_cpu_request    = "100m"
+prometheus_memory_request = "128Mi"
 prometheus_cpu_limit      = "2000m"
 prometheus_memory_limit   = "8Gi"
 
@@ -56,7 +55,7 @@ grafana_cpu_limit       = "500m"
 grafana_memory_limit    = "1Gi"
 
 # Infrastructure settings
-storage_class      = "standard-rwo"
+storage_class      = "standard"
 load_balancer_type = "Internal"  # Use "External" for public access
 
 # Node selector for monitoring workloads (optional)
