@@ -34,7 +34,7 @@ resource "helm_release" "grafana" {
       adminUser     = var.admin_user
       adminPassword = var.admin_password
       
-      # Persistence
+      # Persistence - Keep simple for existing deployments
       persistence = {
         enabled          = true
         storageClassName = var.storage_class

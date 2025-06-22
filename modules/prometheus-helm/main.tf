@@ -44,6 +44,16 @@ resource "helm_release" "prometheus" {
                     storage = var.storage_size
                   }
                 }
+                # Ensure proper volume expansion support
+                volumeMode = "Filesystem"
+              }
+              metadata = {
+                labels = merge(var.labels, {
+                  app         = "prometheus"
+                  component   = "prometheus"
+                  company     = var.company
+                  environment = var.environment
+                })
               }
             }
           }
