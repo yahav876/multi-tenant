@@ -205,6 +205,10 @@ variable "deletion_protection" {
 }
 
 
+variable "services_namespace" {
+  description = "Namespace to deploy ArgoCD"
+  type        = string
+}
 
 variable "argocd_namespace" {
   description = "Namespace to deploy ArgoCD"

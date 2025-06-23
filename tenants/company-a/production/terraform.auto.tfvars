@@ -141,6 +141,7 @@ git_ssh_private_key = "/Users/yahavhorev/.ssh/argocd_company_a"
 # ArgoCD will track this Git repo for manifests
 git_repo_url = "git@github.com:yahav876/multi-tenant-manifest.git"
 
+services_namespace = "services"
 argocd_namespace = "argocd"
 
 # App of Apps settings (optional)

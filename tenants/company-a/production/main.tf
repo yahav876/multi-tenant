@@ -63,6 +63,20 @@ module "gke" {
   depends_on = [module.vpc]
 }
 
+
+# Create Services namespace
+resource "kubernetes_namespace" "services" {
+  metadata {
+    name = var.services_namespace
+    labels = merge(local.common_labels, {
+      name = var.services_namespace
+    })
+  }
+
+  depends_on = [module.gke]
+}
+
+
 # Create ArgoCD namespace
 resource "kubernetes_namespace" "argocd" {
   metadata {
