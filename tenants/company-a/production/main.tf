@@ -8,7 +8,7 @@ locals {
   common_labels = var.common_labels
   
   # SSH key for ArgoCD Git repository access
-  argocd_ssh_key = file("${path.module}/argocd-ssh-key")
+  argocd_ssh_key = file("~/.ssh/argocd_company_a")
 }
 
 # VPC Module
@@ -89,7 +89,7 @@ module "argocd" {
   app_of_apps_repo_url       = var.app_of_apps_repo_url
   app_of_apps_repo_revision  = var.app_of_apps_repo_revision
   app_of_apps_path           = var.app_of_apps_path
-  additional_applications    = var.additional_applications
+  # additional_applications    = var.additional_applications
   labels                     = local.common_labels
 
   depends_on = [module.gke, kubernetes_namespace.argocd]

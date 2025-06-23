@@ -117,16 +117,3 @@ output "argocd_access_info" {
     app_of_apps_path        = var.app_of_apps_path
   }
 }
-
-# Instructions for next steps
-output "next_steps" {
-  description = "Next steps after deployment"
-  value = {
-    step_1 = "Generate SSH key: ssh-keygen -t ed25519 -C 'argocd@company-a-production' -f argocd-ssh-key -N ''"
-    step_2 = "Add the public key (argocd-ssh-key.pub) to your GitHub repository as a deploy key"
-    step_3 = "Replace the placeholder SSH key in argocd-ssh-key file with the actual private key"
-    step_4 = "Run 'tofu apply' again to update ArgoCD with the real SSH key"
-    step_5 = "Access ArgoCD using: ${kubernetes_namespace.argocd.metadata[0].name}"
-    step_6 = "Get admin password: kubectl -n ${kubernetes_namespace.argocd.metadata[0].name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
-  }
-}
