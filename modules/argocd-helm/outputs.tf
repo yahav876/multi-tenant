@@ -1,23 +1,18 @@
-# ArgoCD Helm Module Outputs
+# File: modules/argocd-helm/outputs.tf
+
+output "namespace" {
+  description = "Kubernetes namespace where ArgoCD is deployed"
+  value       = var.namespace
+}
 
 output "release_name" {
   description = "Name of the ArgoCD Helm release"
   value       = helm_release.argocd.name
 }
 
-output "namespace" {
-  description = "Namespace where ArgoCD is deployed"
-  value       = var.namespace
-}
-
-output "chart_version" {
-  description = "Version of the ArgoCD Helm chart deployed"
-  value       = helm_release.argocd.version
-}
-
 output "argocd_server_url" {
-  description = "ArgoCD server URL (for LoadBalancer service type)"
-  value       = var.server_url != "" ? var.server_url : "http://argocd-server.${var.namespace}.svc.cluster.local"
+  description = "ArgoCD server URL (use kubectl port-forward to access)"
+  value       = "http://localhost:8080"
 }
 
 output "argocd_admin_password_command" {
@@ -30,12 +25,12 @@ output "argocd_port_forward_command" {
   value       = "kubectl port-forward svc/argocd-server -n ${var.namespace} 8080:443"
 }
 
-output "monitoring_application_created" {
-  description = "Whether the monitoring ArgoCD application was created"
-  value       = var.create_monitoring_app
+output "app_of_apps_status" {
+  description = "Status of the App of Apps application"
+  value       = var.create_app_of_apps ? "Created" : "Not created"
 }
 
-output "git_ssh_secret_created" {
-  description = "Whether the Git SSH secret was created"
-  value       = var.git_ssh_private_key != null
+output "additional_applications_count" {
+  description = "Number of additional applications created"
+  value       = length(var.additional_applications)
 }

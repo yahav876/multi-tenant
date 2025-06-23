@@ -1,82 +1,3 @@
-# Company A - Production Environment Configuration Example
-# Copy this file to terraform.tfvars and customize the values
-
-# === REQUIRED VARIABLES ===
-company     = "company-a"
-environment = "production"
-
-gcp_project_id = "multi-tenant-dataloop"
-gcp_region     = "us-west1"
-gcp_zone       = "us-west1-a"
-
-# === NETWORK CONFIGURATION ===
-subnet_cidr    = "10.0.0.0/24"
-pods_cidr      = "10.1.0.0/16"
-services_cidr  = "10.2.0.0/16"
-
-# Authorized networks for GKE master access (IMPORTANT: Restrict to your IP ranges)
-authorized_networks = [
-  "5.29.9.128/32"    # Your current IP address
-]
-
-# === GKE CLUSTER CONFIGURATION ===
-node_machine_type    = "e2-medium"  #e2-medium	     # 2 vCPUs, 4GB RAM - production ready
-min_nodes            = 1                # Start with 1 node total (regional)
-max_nodes            = 3               # Can scale to 3 nodes later
-node_disk_size       = 20              # GB per node
-initial_node_count   = 1                # Start with just 1 node initially
-
-# Optional: Use existing service account for GKE nodes
-#gke_service_account_email = "gke-nodes@your-project.iam.gserviceaccount.com"
-
-# Security
-enable_binary_authorization = true
-
-# === ARGOCD CONFIGURATION ===
-# ArgoCD will manage the monitoring stack via GitOps
-monitoring_namespace = "monitoring"
-
-# ArgoCD Basic Settings
-argocd_chart_version = "5.51.6"
-argocd_version      = "v2.9.3"
-argocd_service_type = "LoadBalancer"
-
-# ArgoCD Resource Configuration
-argocd_server_cpu_request     = "100m"
-argocd_server_memory_request  = "128Mi"
-argocd_server_cpu_limit       = "500m"
-argocd_server_memory_limit    = "512Mi"
-
-argocd_controller_cpu_request    = "250m"
-argocd_controller_memory_request = "256Mi"
-argocd_controller_cpu_limit      = "500m"
-argocd_controller_memory_limit   = "512Mi"
-
-argocd_repo_cpu_request    = "100m"
-argocd_repo_memory_request = "128Mi"
-argocd_repo_cpu_limit      = "1000m"
-argocd_repo_memory_limit   = "1Gi"
-
-# Git Repository Configuration for kube-prometheus-stack
-monitoring_repo_url      = "git@github.com:yahav876/multi-tenant-manifest.git"
-monitoring_repo_revision = "HEAD"
-monitoring_app_path      = "monitoring"
-
-# Disable monitoring app creation initially to avoid circular dependency
-create_monitoring_app = false
-
-# SSH key will be provided separately for private repo access
-# git_ssh_private_key = "..."  # Add your SSH private key here
-
-# Infrastructure settings - GKE Storage Classes
-# ArgoCD will deploy monitoring with persistent storage
-storage_class = "standard"     # Will be used by ArgoCD-deployed monitoring stack
-
-# Node selector for workloads (optional)
-#node_selector = {
-#  "cloud.google.com/gke-nodepool" = "primary-pool"
-#}
-
 # === COMMON LABELS ===
 common_labels = {
   company     = "company-a"
@@ -86,3 +7,122 @@ common_labels = {
   cost_center = "engineering"
 }
 
+# === GCP CONFIGURATION ===
+gcp_project_id = "multi-tenant-dataloop"
+gcp_region     = "us-central1"
+gcp_zone       = "us-central1-a"
+
+# === VPC CONFIGURATION ===
+vpc_network_name            = "company-a-prod-vpc"
+vpc_routing_mode           = "REGIONAL"
+vpc_subnet_name            = "company-a-prod-subnet"
+subnet_cidr                = "10.0.0.0/16"
+vpc_subnet_private_access  = true
+vpc_subnet_flow_logs       = true
+vpc_subnet_description     = "Primary subnet for Company A production environment"
+vpc_pods_range_name        = "pods-range"
+pods_cidr                  = "10.1.0.0/16"
+vpc_services_range_name    = "services-range"
+services_cidr              = "10.2.0.0/16"
+
+# Firewall rules for GKE
+vpc_ingress_rules = [
+  {
+    name        = "allow-gke-ingress"
+    description = "Allow ingress traffic for GKE"
+    direction   = "INGRESS"
+    priority    = 1000
+    ranges      = ["10.0.0.0/8"]
+    source_tags = []
+    target_tags = ["gke-nodes"]
+    allow = [{
+      protocol = "tcp"
+      ports    = ["443", "80", "8080", "9090", "3000"]
+    }]
+    deny = []
+  }
+]
+
+# === GKE CONFIGURATION ===
+cluster_name                       = "company-a-prod-gke"
+regional                          = true
+remove_default_node_pool          = true
+initial_node_count                = 1
+network_policy                    = true
+horizontal_pod_autoscaling        = true
+enable_vertical_pod_autoscaling   = true
+enable_shielded_nodes             = true
+enable_binary_authorization       = false  # Set to false for easier initial setup
+logging_service                   = "logging.googleapis.com/kubernetes"
+monitoring_service                = "monitoring.googleapis.com/kubernetes"
+authorized_networks               = ["0.0.0.0/0"]  # Restrict this for production
+identity_namespace                = "multi-tenant-dataloop.svc.id.goog"
+deletion_protection               = false
+
+# Node pools configuration
+node_pools = [
+  {
+    name               = "default-pool"
+    machine_type       = "e2-medium"
+    min_count          = 1
+    max_count          = 3
+    local_ssd_count    = 0
+    spot               = false
+    disk_size_gb       = 30
+    disk_type          = "pd-standard"
+    image_type         = "COS_CONTAINERD"
+    enable_gcfs        = false
+    enable_gvnic       = false
+    auto_repair        = true
+    auto_upgrade       = true
+    service_account    = ""  # Will use default compute service account
+    preemptible        = false
+    initial_node_count = 1
+  }
+]
+
+node_pools_labels = {
+  default-pool = {
+    env  = "production"
+    team = "platform"
+  }
+}
+
+node_pools_tags = {
+  default-pool = ["gke-nodes", "production"]
+}
+
+# === ARGOCD CONFIGURATION ===
+argocd_namespace      = "argocd"
+argocd_chart_version = "5.46.7"
+
+# === APP OF APPS CONFIGURATION ===
+# Enable App of Apps pattern for better GitOps management
+create_app_of_apps = true
+app_of_apps_repo_url = "git@github.com:yahav876/multi-tenant-manifest.git"
+app_of_apps_repo_revision = "HEAD"
+app_of_apps_path = "applications/company-a/production"
+
+# === ADDITIONAL APPLICATIONS ===
+# Define additional applications that ArgoCD should manage
+additional_applications = [
+  {
+    name           = "sample-app"
+    namespace      = "argocd"
+    repo_url       = "git@github.com:yahav876/multi-tenant-manifest.git"
+    target_revision = "HEAD"
+    path           = "applications/sample-app"
+    dest_namespace = "services"
+    project        = "default"
+  }
+  # Add more applications as needed
+  # {
+  #   name           = "another-app"
+  #   namespace      = "argocd"
+  #   repo_url       = "git@github.com:yahav876/multi-tenant-manifest.git"
+  #   target_revision = "HEAD"
+  #   path           = "applications/another-app"
+  #   dest_namespace = "services"
+  #   project        = "default"
+  # }
+]

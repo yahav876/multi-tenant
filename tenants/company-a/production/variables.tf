@@ -1,17 +1,12 @@
-# Company A - Production Environment Variables
+# File: tenants/company-a/production/variables.tf
 
-# General configuration
-variable "company" {
-  description = "Company identifier"
-  type        = string
+# Common labels for all resources
+variable "common_labels" {
+  description = "Common labels to apply to all resources"
+  type        = map(string)
 }
 
-variable "environment" {
-  description = "Environment name"
-  type        = string
-}
-
-# Provider variables
+# GCP Configuration
 variable "gcp_project_id" {
   description = "GCP Project ID"
   type        = string
@@ -27,240 +22,258 @@ variable "gcp_zone" {
   type        = string
 }
 
-# Networking
+# VPC Configuration
+variable "vpc_network_name" {
+  description = "VPC network name"
+  type        = string
+}
+
+variable "vpc_routing_mode" {
+  description = "VPC routing mode (REGIONAL or GLOBAL)"
+  type        = string
+  default     = "REGIONAL"
+}
+
+variable "vpc_subnet_name" {
+  description = "Primary subnet name"
+  type        = string
+}
+
 variable "subnet_cidr" {
-  description = "CIDR block for the main subnet"
+  description = "CIDR block for the primary subnet"
   type        = string
 }
 
-variable "pods_cidr" {
-  description = "CIDR block for Kubernetes pods"
-  type        = string
-}
-
-variable "services_cidr" {
-  description = "CIDR block for Kubernetes services"
-  type        = string
-}
-
-variable "authorized_networks" {
-  description = "List of CIDR blocks that can access the GKE cluster master"
-  type        = list(string)
-}
-
-# GKE Configuration
-variable "node_machine_type" {
-  description = "Machine type for GKE nodes"
-  type        = string
-}
-
-variable "min_nodes" {
-  description = "Minimum number of nodes in the GKE cluster"
-  type        = number
-}
-
-variable "max_nodes" {
-  description = "Maximum number of nodes in the GKE cluster"
-  type        = number
-}
-
-variable "node_disk_size" {
-  description = "Disk size in GB for GKE nodes"
-  type        = number
-}
-
-variable "initial_node_count" {
-  description = "Initial number of nodes in the node pool"
-  type        = number
-}
-
-variable "gke_service_account_email" {
-  description = "Service account email for GKE nodes (optional)"
-  type        = string
-  default     = null
-}
-
-variable "enable_binary_authorization" {
-  description = "Enable Binary Authorization for enhanced security"
-  type        = bool
-}
-
-# Monitoring Configuration (for ArgoCD managed monitoring)
-variable "monitoring_namespace" {
-  description = "Kubernetes namespace for monitoring stack"
-  type        = string
-}
-
-# ArgoCD Configuration
-variable "argocd_chart_version" {
-  description = "Version of the ArgoCD Helm chart"
-  type        = string
-  default     = "5.51.6"
-}
-
-variable "argocd_version" {
-  description = "ArgoCD application version"
-  type        = string
-  default     = "v2.9.3"
-}
-
-variable "argocd_service_type" {
-  description = "Service type for ArgoCD server (ClusterIP, NodePort, LoadBalancer)"
-  type        = string
-  default     = "LoadBalancer"
-}
-
-variable "argocd_service_annotations" {
-  description = "Annotations for the ArgoCD server service"
-  type        = map(string)
-  default     = {}
-}
-
-variable "argocd_enable_ingress" {
-  description = "Enable ingress for ArgoCD server"
-  type        = bool
-  default     = false
-}
-
-variable "argocd_ingress_hosts" {
-  description = "Ingress hosts for ArgoCD"
-  type        = list(string)
-  default     = []
-}
-
-variable "argocd_ingress_annotations" {
-  description = "Annotations for the ArgoCD ingress"
-  type        = map(string)
-  default     = {}
-}
-
-variable "argocd_server_url" {
-  description = "ArgoCD server URL"
-  type        = string
-  default     = ""
-}
-
-# ArgoCD Server Resource Configuration
-variable "argocd_server_cpu_request" {
-  description = "CPU request for ArgoCD server"
-  type        = string
-  default     = "100m"
-}
-
-variable "argocd_server_memory_request" {
-  description = "Memory request for ArgoCD server"
-  type        = string
-  default     = "128Mi"
-}
-
-variable "argocd_server_cpu_limit" {
-  description = "CPU limit for ArgoCD server"
-  type        = string
-  default     = "500m"
-}
-
-variable "argocd_server_memory_limit" {
-  description = "Memory limit for ArgoCD server"
-  type        = string
-  default     = "512Mi"
-}
-
-# ArgoCD Controller Resource Configuration
-variable "argocd_controller_cpu_request" {
-  description = "CPU request for ArgoCD controller"
-  type        = string
-  default     = "250m"
-}
-
-variable "argocd_controller_memory_request" {
-  description = "Memory request for ArgoCD controller"
-  type        = string
-  default     = "256Mi"
-}
-
-variable "argocd_controller_cpu_limit" {
-  description = "CPU limit for ArgoCD controller"
-  type        = string
-  default     = "500m"
-}
-
-variable "argocd_controller_memory_limit" {
-  description = "Memory limit for ArgoCD controller"
-  type        = string
-  default     = "512Mi"
-}
-
-# ArgoCD Repo Server Resource Configuration
-variable "argocd_repo_cpu_request" {
-  description = "CPU request for ArgoCD repo server"
-  type        = string
-  default     = "100m"
-}
-
-variable "argocd_repo_memory_request" {
-  description = "Memory request for ArgoCD repo server"
-  type        = string
-  default     = "128Mi"
-}
-
-variable "argocd_repo_cpu_limit" {
-  description = "CPU limit for ArgoCD repo server"
-  type        = string
-  default     = "1000m"
-}
-
-variable "argocd_repo_memory_limit" {
-  description = "Memory limit for ArgoCD repo server"
-  type        = string
-  default     = "1Gi"
-}
-
-# Git Repository Configuration for ArgoCD
-variable "monitoring_repo_url" {
-  description = "Git repository URL for monitoring manifests"
-  type        = string
-}
-
-variable "monitoring_repo_revision" {
-  description = "Git repository revision/branch for monitoring manifests"
-  type        = string
-  default     = "HEAD"
-}
-
-variable "monitoring_app_path" {
-  description = "Path in the Git repository for monitoring manifests"
-  type        = string
-  default     = "monitoring"
-}
-
-variable "git_ssh_private_key" {
-  description = "SSH private key for Git repository access"
-  type        = string
-  default     = null
-  sensitive   = true
-}
-
-variable "create_monitoring_app" {
-  description = "Whether to create the monitoring ArgoCD application"
+variable "vpc_subnet_private_access" {
+  description = "Enable private Google access on the subnet"
   type        = bool
   default     = true
 }
 
-# Infrastructure Configuration
-variable "storage_class" {
-  description = "Storage class for persistent volumes"
+variable "vpc_subnet_flow_logs" {
+  description = "Enable flow logs on the subnet"
+  type        = bool
+  default     = true
+}
+
+variable "vpc_subnet_description" {
+  description = "Description for the subnet"
   type        = string
 }
 
-variable "node_selector" {
-  description = "Node selector for workloads"
-  type        = map(string)
+variable "vpc_pods_range_name" {
+  description = "Name of the secondary range for pods"
+  type        = string
+}
+
+variable "pods_cidr" {
+  description = "CIDR block for Kubernetes pods (secondary range)"
+  type        = string
+}
+
+variable "vpc_services_range_name" {
+  description = "Name of the secondary range for services"
+  type        = string
+}
+
+variable "services_cidr" {
+  description = "CIDR block for Kubernetes services (secondary range)"
+  type        = string
+}
+
+variable "vpc_ingress_rules" {
+  description = "List of ingress firewall rules (see terraform-google-modules/network docs)"
+  type        = list(any)
+  default     = []
+}
+
+# GKE Configuration
+variable "cluster_name" {
+  description = "Name for the GKE cluster"
+  type        = string
+}
+
+variable "regional" {
+  description = "Whether to use a regional cluster"
+  type        = bool
+  default     = true
+}
+
+variable "remove_default_node_pool" {
+  description = "Whether to remove the default node pool"
+  type        = bool
+  default     = true
+}
+
+variable "initial_node_count" {
+  description = "Initial number of nodes in the cluster"
+  type        = number
+  default     = 1
+}
+
+variable "node_pools" {
+  description = "List of maps defining node pools"
+  type = list(object({
+    name               = string
+    machine_type       = string
+    min_count          = number
+    max_count          = number
+    local_ssd_count    = number
+    spot               = bool
+    disk_size_gb       = number
+    disk_type          = string
+    image_type         = string
+    enable_gcfs        = bool
+    enable_gvnic       = bool
+    auto_repair        = bool
+    auto_upgrade       = bool
+    service_account    = string
+    preemptible        = bool
+    initial_node_count = number
+  }))
+}
+
+variable "network_policy" {
+  description = "Enable network policy"
+  type        = bool
+  default     = true
+}
+
+variable "horizontal_pod_autoscaling" {
+  description = "Enable horizontal pod autoscaling"
+  type        = bool
+  default     = true
+}
+
+variable "enable_vertical_pod_autoscaling" {
+  description = "Enable vertical pod autoscaling"
+  type        = bool
+  default     = true
+}
+
+variable "enable_shielded_nodes" {
+  description = "Enable shielded nodes"
+  type        = bool
+  default     = true
+}
+
+variable "enable_binary_authorization" {
+  description = "Enable Binary Authorization"
+  type        = bool
+  default     = true
+}
+
+variable "logging_service" {
+  description = "Logging service"
+  type        = string
+  default     = "logging.googleapis.com/kubernetes"
+}
+
+variable "monitoring_service" {
+  description = "Monitoring service"
+  type        = string
+  default     = "monitoring.googleapis.com/kubernetes"
+}
+
+variable "authorized_networks" {
+  description = "List of CIDR blocks allowed to access the GKE master"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "node_pools_labels" {
+  description = "Labels to set on all node pools"
+  type        = map(any)
   default     = {}
 }
 
-# Common labels for all resources
-variable "common_labels" {
-  description = "Common labels to apply to all resources"
-  type        = map(string)
+variable "node_pools_tags" {
+  description = "Tags to set on all node pools"
+  type        = map(list(string))
+  default     = {}
 }
 
+variable "identity_namespace" {
+  description = "Identity namespace for workload identity"
+  type        = string
+}
+
+variable "deletion_protection" {
+  description = "Whether or not to allow the cluster to be deleted"
+  type        = bool
+  default     = false
+}
+
+# ArgoCD Configuration
+variable "argocd_namespace" {
+  description = "Kubernetes namespace for ArgoCD"
+  type        = string
+  default     = "argocd"
+}
+
+variable "argocd_chart_version" {
+  description = "ArgoCD Helm chart version"
+  type        = string
+  default     = "5.46.7"
+}
+
+variable "argocd_values_file_path" {
+  description = "Path to ArgoCD Helm chart values file"
+  type        = string
+  default     = ""
+}
+
+# App of Apps Configuration
+variable "create_app_of_apps" {
+  description = "Whether to create the App of Apps ArgoCD application"
+  type        = bool
+  default     = true
+}
+
+variable "app_of_apps_repo_url" {
+  description = "Git repository URL for App of Apps manifests"
+  type        = string
+  default     = ""
+}
+
+variable "app_of_apps_repo_revision" {
+  description = "Git repository revision/branch for App of Apps manifests"
+  type        = string
+  default     = "HEAD"
+}
+
+variable "app_of_apps_path" {
+  description = "Path in the Git repository for App of Apps manifests"
+  type        = string
+  default     = "applications"
+}
+
+# Additional Applications Configuration
+variable "additional_applications" {
+  description = "List of additional ArgoCD applications to create"
+  type = list(object({
+    name           = string
+    namespace      = string
+    repo_url       = string
+    target_revision = string
+    path           = string
+    dest_namespace = string
+    project        = optional(string, "default")
+    helm_chart     = optional(string, "")
+    helm_values    = optional(string, "")
+    sync_policy = optional(object({
+      automated = optional(object({
+        prune       = optional(bool, true)
+        self_heal   = optional(bool, true)
+        allow_empty = optional(bool, false)
+      }), {})
+      sync_options = optional(list(string), [
+        "CreateNamespace=true",
+        "PrunePropagationPolicy=foreground",
+        "PruneLast=true",
+        "ServerSideApply=true"
+      ])
+    }), {})
+  }))
+  default = []
+}

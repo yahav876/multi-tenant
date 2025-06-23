@@ -73,48 +73,35 @@ output "cluster_master_version" {
 # ArgoCD Information
 output "argocd_namespace" {
   description = "Kubernetes namespace for ArgoCD"
-  value       = module.argocd.namespace
-}
-
-output "argocd_release_name" {
-  description = "Name of the ArgoCD Helm release"
-  value       = module.argocd.release_name
+  value       = kubernetes_namespace.argocd.metadata[0].name
 }
 
 output "argocd_server_url" {
-  description = "ArgoCD server URL"
-  value       = module.argocd.argocd_server_url
+  description = "ArgoCD server URL (use kubectl port-forward to access)"
+  value       = "http://localhost:8080"
 }
 
 output "argocd_admin_password_command" {
   description = "Command to get the ArgoCD admin password"
-  value       = module.argocd.argocd_admin_password_command
+  value       = "kubectl -n ${kubernetes_namespace.argocd.metadata[0].name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
 }
 
 output "argocd_port_forward_command" {
   description = "Command to port-forward to ArgoCD server"
-  value       = module.argocd.argocd_port_forward_command
+  value       = "kubectl port-forward svc/argocd-server -n ${kubernetes_namespace.argocd.metadata[0].name} 8080:443"
 }
-
-output "monitoring_namespace" {
-  description = "Kubernetes namespace for monitoring stack (managed by ArgoCD)"
-  value       = var.monitoring_namespace
-}
-
 
 # Summary Information
 output "deployment_summary" {
   description = "Summary of deployed resources"
   value = {
-    company           = var.company
-    environment       = var.environment
     project_id        = var.gcp_project_id
     region           = var.gcp_region
     cluster_name     = module.gke.cluster_name
     cluster_location = module.gke.cluster_location
     vpc_network      = module.vpc.network_name
     gitops_tool      = "ArgoCD"
-    monitoring_stack = "kube-prometheus-stack (managed by ArgoCD)"
+    gitops_repo      = var.app_of_apps_repo_url
     node_pools       = module.gke.node_pools_names
   }
 }
@@ -124,9 +111,22 @@ output "argocd_access_info" {
   description = "Information about accessing ArgoCD"
   value = {
     admin_username           = "admin"
-    get_password_command     = module.argocd.argocd_admin_password_command
-    port_forward_command     = module.argocd.argocd_port_forward_command
-    git_repository          = var.monitoring_repo_url
-    monitoring_app_path     = var.monitoring_app_path
+    get_password_command     = "kubectl -n ${kubernetes_namespace.argocd.metadata[0].name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+    port_forward_command     = "kubectl port-forward svc/argocd-server -n ${kubernetes_namespace.argocd.metadata[0].name} 8080:443"
+    git_repository          = var.app_of_apps_repo_url
+    app_of_apps_path        = var.app_of_apps_path
+  }
+}
+
+# Instructions for next steps
+output "next_steps" {
+  description = "Next steps after deployment"
+  value = {
+    step_1 = "Generate SSH key: ssh-keygen -t ed25519 -C 'argocd@company-a-production' -f argocd-ssh-key -N ''"
+    step_2 = "Add the public key (argocd-ssh-key.pub) to your GitHub repository as a deploy key"
+    step_3 = "Replace the placeholder SSH key in argocd-ssh-key file with the actual private key"
+    step_4 = "Run 'tofu apply' again to update ArgoCD with the real SSH key"
+    step_5 = "Access ArgoCD using: ${kubernetes_namespace.argocd.metadata[0].name}"
+    step_6 = "Get admin password: kubectl -n ${kubernetes_namespace.argocd.metadata[0].name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
   }
 }
