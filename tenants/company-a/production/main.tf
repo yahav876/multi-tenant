@@ -80,10 +80,9 @@ resource "kubernetes_namespace" "argocd" {
 module "argocd" {
   source = "../../../modules/argocd-helm"
 
-  namespace                   = kubernetes_namespace.argocd.metadata[0].name
-  chart_version              = var.argocd_chart_version
-  git_repo_url               = var.app_of_apps_repo_url
-  git_ssh_private_key        = local.argocd_ssh_key
+  chart_version              = var.chart_version
+  git_repo_url               = var.git_repo_url
+  git_ssh_private_key  = file(var.git_ssh_private_key)
   create_app_of_apps         = var.create_app_of_apps
   app_of_apps_repo_url       = var.app_of_apps_repo_url
   app_of_apps_repo_revision  = var.app_of_apps_repo_revision

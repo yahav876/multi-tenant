@@ -76,16 +76,6 @@ output "argocd_namespace" {
   value       = kubernetes_namespace.argocd.metadata[0].name
 }
 
-output "argocd_server_url" {
-  description = "ArgoCD server URL (external load balancer)"
-  value       = module.argocd.argocd_server_url
-}
-
-output "argocd_server_load_balancer_ip" {
-  description = "External IP address of the ArgoCD server load balancer"
-  value       = module.argocd.argocd_server_load_balancer_ip
-}
-
 output "argocd_admin_password_command" {
   description = "Command to get the ArgoCD admin password"
   value       = module.argocd.argocd_admin_password_command
@@ -117,10 +107,18 @@ output "argocd_access_info" {
   value = {
     admin_username           = "admin"
     get_password_command     = module.argocd.argocd_admin_password_command
-    external_url             = module.argocd.argocd_server_url
-    external_ip              = module.argocd.argocd_server_load_balancer_ip
     port_forward_command     = module.argocd.argocd_port_forward_command
     git_repository          = var.app_of_apps_repo_url
     app_of_apps_path        = var.app_of_apps_path
   }
+}
+
+
+output "reminder_create_app_of_apps" {
+  value = (
+    var.create_app_of_apps == false ?
+    "REMINDER: 'create_app_of_apps' is set to false. Change it to true and re-apply Terraform to enable the App of Apps deployment in ArgoCD."
+    : "App of Apps will be created."
+  )
+  description = "Reminder to set create_app_of_apps to true after initial infra deployment."
 }

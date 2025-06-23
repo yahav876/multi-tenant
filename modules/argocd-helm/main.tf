@@ -37,6 +37,7 @@ resource "kubernetes_secret" "repo_ssh_secret" {
     sshPrivateKey = var.git_ssh_private_key
   }
   depends_on = [helm_release.argocd]
+
 }
 
 # (Optional) App of Apps Application creation
@@ -60,6 +61,7 @@ resource "kubernetes_manifest" "app_of_apps" {
         repoURL        = var.app_of_apps_repo_url
         targetRevision = var.app_of_apps_repo_revision
         path           = var.app_of_apps_path
+        kustomize      = {}
       }
       destination = {
         server    = "https://kubernetes.default.svc"

@@ -228,10 +228,6 @@ variable "values_file_path" {
   default     = ""
 }
 
-variable "git_repo_url" {
-  description = "Git repository URL for ArgoCD"
-  type        = string
-}
 
 variable "git_ssh_private_key" {
   description = "Contents of the SSH private key for GitOps repo"
@@ -275,12 +271,8 @@ variable "argocd_chart_version" {
   default     = "7.1.0"    # You can leave this out if you want to force it to be provided in tfvars
 }
 
-variable "argocd_ssh_private_key_path" {
-  description = "Path to your SSH key for ArgoCD repo access"
-  type        = string
-}
 
-variable "argocd_git_repo_url" {
+variable "git_repo_url" {
   description = "Git repo ArgoCD will track"
   type        = string
 }

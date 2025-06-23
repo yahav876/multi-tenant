@@ -6,23 +6,17 @@ server:
   ingress:
     enabled: false
 
-configs:
-  repositories:
-    private-github:
-      url: "${git_repo_url}"
-      type: git
-      name: private-github
-      sshPrivateKeySecret:
-        name: repo-ssh-secret
-        key: sshPrivateKey
-  secret:
-    createSecret: false  # We'll create the repo secret manually
+# Do NOT include the 'configs.repositories' block if you manage the repo secret with Terraform.
+# The 'repoServer' will automatically discover the secret by label.
+# The following disables Helm-side repo management and avoids the template error.
 
-# Disable unused features if desired
+configs:
+  secret:
+    createSecret: true  # We'll create the repo secret manually
+
 controller:
   resources: {}
 repoServer:
   resources: {}
 applicationSet:
   enabled: true
-
