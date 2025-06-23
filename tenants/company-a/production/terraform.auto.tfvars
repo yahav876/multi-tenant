@@ -19,7 +19,7 @@ vpc_subnet_name            = "company-a-production-subnet"
 subnet_cidr                = "10.0.0.0/24"
 vpc_subnet_private_access  = true
 vpc_subnet_flow_logs       = true
-vpc_subnet_description     = "Primary subnet for Company A production environment"
+vpc_subnet_description     = "Primary subnet for company-a production"
 vpc_pods_range_name        = "gke-pods"
 pods_cidr                  = "10.1.0.0/16"
 vpc_services_range_name    = "gke-services"
@@ -152,8 +152,6 @@ additional_applications = [
     path           = "applications/sample-app"
     dest_namespace = "services"
     project        = "default"
-    helm_chart     = ""
-    helm_values    = ""
   }
   # Add more applications as needed
   # {
