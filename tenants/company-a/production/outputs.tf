@@ -77,18 +77,23 @@ output "argocd_namespace" {
 }
 
 output "argocd_server_url" {
-  description = "ArgoCD server URL (use kubectl port-forward to access)"
-  value       = "http://localhost:8080"
+  description = "ArgoCD server URL (external load balancer)"
+  value       = module.argocd.argocd_server_url
+}
+
+output "argocd_server_load_balancer_ip" {
+  description = "External IP address of the ArgoCD server load balancer"
+  value       = module.argocd.argocd_server_load_balancer_ip
 }
 
 output "argocd_admin_password_command" {
   description = "Command to get the ArgoCD admin password"
-  value       = "kubectl -n ${kubernetes_namespace.argocd.metadata[0].name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
+  value       = module.argocd.argocd_admin_password_command
 }
 
 output "argocd_port_forward_command" {
-  description = "Command to port-forward to ArgoCD server"
-  value       = "kubectl port-forward svc/argocd-server -n ${kubernetes_namespace.argocd.metadata[0].name} 8080:443"
+  description = "Command to port-forward to ArgoCD server (alternative access method)"
+  value       = module.argocd.argocd_port_forward_command
 }
 
 # Summary Information
@@ -111,8 +116,10 @@ output "argocd_access_info" {
   description = "Information about accessing ArgoCD"
   value = {
     admin_username           = "admin"
-    get_password_command     = "kubectl -n ${kubernetes_namespace.argocd.metadata[0].name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
-    port_forward_command     = "kubectl port-forward svc/argocd-server -n ${kubernetes_namespace.argocd.metadata[0].name} 8080:443"
+    get_password_command     = module.argocd.argocd_admin_password_command
+    external_url             = module.argocd.argocd_server_url
+    external_ip              = module.argocd.argocd_server_load_balancer_ip
+    port_forward_command     = module.argocd.argocd_port_forward_command
     git_repository          = var.app_of_apps_repo_url
     app_of_apps_path        = var.app_of_apps_path
   }

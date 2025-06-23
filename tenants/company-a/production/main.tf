@@ -82,14 +82,13 @@ module "argocd" {
 
   namespace                   = kubernetes_namespace.argocd.metadata[0].name
   chart_version              = var.argocd_chart_version
-  values_file_path           = var.argocd_values_file_path
   git_repo_url               = var.app_of_apps_repo_url
   git_ssh_private_key        = local.argocd_ssh_key
   create_app_of_apps         = var.create_app_of_apps
   app_of_apps_repo_url       = var.app_of_apps_repo_url
   app_of_apps_repo_revision  = var.app_of_apps_repo_revision
   app_of_apps_path           = var.app_of_apps_path
-  # additional_applications    = var.additional_applications
+  additional_applications    = var.additional_applications
   labels                     = local.common_labels
 
   depends_on = [module.gke, kubernetes_namespace.argocd]

@@ -204,76 +204,158 @@ variable "deletion_protection" {
   default     = false
 }
 
-# ArgoCD Configuration
+
+
 variable "argocd_namespace" {
-  description = "Kubernetes namespace for ArgoCD"
+  description = "Namespace to deploy ArgoCD"
   type        = string
-  default     = "argocd"
 }
 
-variable "argocd_chart_version" {
-  description = "ArgoCD Helm chart version"
+variable "chart_version" {
+  description = "Helm chart version for ArgoCD"
   type        = string
-  default     = "5.46.7"
 }
 
-variable "argocd_values_file_path" {
-  description = "Path to ArgoCD Helm chart values file"
+variable "labels" {
+  description = "Labels to add to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+variable "values_file_path" {
+  description = "Optional: Path to a custom values.yaml file"
   type        = string
   default     = ""
 }
 
-# App of Apps Configuration
+variable "git_repo_url" {
+  description = "Git repository URL for ArgoCD"
+  type        = string
+}
+
+variable "git_ssh_private_key" {
+  description = "Contents of the SSH private key for GitOps repo"
+  type        = string
+  sensitive   = true
+}
+
 variable "create_app_of_apps" {
-  description = "Whether to create the App of Apps ArgoCD application"
+  description = "Whether to create the App of Apps ArgoCD Application"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "app_of_apps_repo_url" {
-  description = "Git repository URL for App of Apps manifests"
+  description = "Git repo for App of Apps"
   type        = string
   default     = ""
 }
 
 variable "app_of_apps_repo_revision" {
-  description = "Git repository revision/branch for App of Apps manifests"
+  description = "Git revision for App of Apps"
   type        = string
   default     = "HEAD"
 }
 
 variable "app_of_apps_path" {
-  description = "Path in the Git repository for App of Apps manifests"
+  description = "Path in repo for App of Apps"
   type        = string
-  default     = "applications"
+  default     = "."
 }
 
-# Additional Applications Configuration
 variable "additional_applications" {
-  description = "List of additional ArgoCD applications to create"
-  type = list(object({
-    name           = string
-    namespace      = string
-    repo_url       = string
-    target_revision = string
-    path           = string
-    dest_namespace = string
-    project        = optional(string, "default")
-    helm_chart     = optional(string, "")
-    helm_values    = optional(string, "")
-    sync_policy = optional(object({
-      automated = optional(object({
-        prune       = optional(bool, true)
-        self_heal   = optional(bool, true)
-        allow_empty = optional(bool, false)
-      }), {})
-      sync_options = optional(list(string), [
-        "CreateNamespace=true",
-        "PrunePropagationPolicy=foreground",
-        "PruneLast=true",
-        "ServerSideApply=true"
-      ])
-    }), {})
-  }))
-  default = []
+  description = "List of additional applications to create"
+  type        = list(any)
+  default     = []
 }
+
+variable "argocd_chart_version" {
+  description = "ArgoCD Helm chart version"
+  type        = string
+  default     = "7.1.0"    # You can leave this out if you want to force it to be provided in tfvars
+}
+
+variable "argocd_ssh_private_key_path" {
+  description = "Path to your SSH key for ArgoCD repo access"
+  type        = string
+}
+
+variable "argocd_git_repo_url" {
+  description = "Git repo ArgoCD will track"
+  type        = string
+}
+
+
+# # ArgoCD Configuration
+# variable "argocd_namespace" {
+#   description = "Kubernetes namespace for ArgoCD"
+#   type        = string
+#   default     = "argocd"
+# }
+
+# variable "argocd_chart_version" {
+#   description = "ArgoCD Helm chart version"
+#   type        = string
+#   default     = "5.46.7"
+# }
+
+# variable "argocd_values_file_path" {
+#   description = "Path to ArgoCD Helm chart values file"
+#   type        = string
+#   default     = ""
+# }
+
+# # App of Apps Configuration
+# variable "create_app_of_apps" {
+#   description = "Whether to create the App of Apps ArgoCD application"
+#   type        = bool
+#   default     = true
+# }
+
+# variable "app_of_apps_repo_url" {
+#   description = "Git repository URL for App of Apps manifests"
+#   type        = string
+#   default     = ""
+# }
+
+# variable "app_of_apps_repo_revision" {
+#   description = "Git repository revision/branch for App of Apps manifests"
+#   type        = string
+#   default     = "HEAD"
+# }
+
+# variable "app_of_apps_path" {
+#   description = "Path in the Git repository for App of Apps manifests"
+#   type        = string
+#   default     = "applications"
+# }
+
+# # Additional Applications Configuration
+# variable "additional_applications" {
+#   description = "List of additional ArgoCD applications to create"
+#   type = list(object({
+#     name           = string
+#     namespace      = string
+#     repo_url       = string
+#     target_revision = string
+#     path           = string
+#     dest_namespace = string
+#     project        = optional(string, "default")
+#     helm_chart     = optional(string, "")
+#     helm_values    = optional(string, "")
+#     sync_policy = optional(object({
+#       automated = optional(object({
+#         prune       = optional(bool, true)
+#         self_heal   = optional(bool, true)
+#         allow_empty = optional(bool, false)
+#       }), {})
+#       sync_options = optional(list(string), [
+#         "CreateNamespace=true",
+#         "PrunePropagationPolicy=foreground",
+#         "PruneLast=true",
+#         "ServerSideApply=true"
+#       ])
+#     }), {})
+#   }))
+#   default = []
+# }

@@ -130,37 +130,70 @@ node_pools_tags = {
   primary-pool = ["gke-node", "company-a-production"]
 }
 
-# === ARGOCD CONFIGURATION ===
-argocd_namespace      = "argocd"
-argocd_chart_version = "5.46.7"
 
-# === APP OF APPS CONFIGURATION ===
-# Enable App of Apps pattern for better GitOps management
+
+# ArgoCD Helm Chart version
+argocd_chart_version = "7.1.0"
+
+# Path to your SSH key on your local machine (should be readable by Terraform)
+argocd_ssh_private_key_path = "/home/youruser/.ssh/id_rsa_argocd"
+
+# ArgoCD will track this Git repo for manifests
+argocd_git_repo_url = "git@github.com:yahav876/multi-tenant-manifest.git"
+
+# No need to set values_file_path (use module default templating)
+# values_file_path = ""
+
+# App of Apps settings (optional)
 create_app_of_apps = true
 app_of_apps_repo_url = "git@github.com:yahav876/multi-tenant-manifest.git"
 app_of_apps_repo_revision = "HEAD"
-app_of_apps_path = "applications/company-a/production"
+app_of_apps_path = "."
+additional_applications = []
 
-# === ADDITIONAL APPLICATIONS ===
-# Define additional applications that ArgoCD should manage
-additional_applications = [
-  {
-    name           = "sample-app"
-    namespace      = "argocd"
-    repo_url       = "git@github.com:yahav876/multi-tenant-manifest.git"
-    target_revision = "HEAD"
-    path           = "applications/sample-app"
-    dest_namespace = "services"
-    project        = "default"
-  }
-  # Add more applications as needed
-  # {
-  #   name           = "another-app"
-  #   namespace      = "argocd"
-  #   repo_url       = "git@github.com:yahav876/multi-tenant-manifest.git"
-  #   target_revision = "HEAD"
-  #   path           = "applications/another-app"
-  #   dest_namespace = "services"
-  #   project        = "default"
-  # }
-]
+# # === ARGOCD CONFIGURATION ===
+# argocd_namespace      = "argocd"
+# argocd_chart_version = "5.46.7"
+
+# # === APP OF APPS CONFIGURATION ===
+# # Enable App of Apps pattern for better GitOps management
+# create_app_of_apps = true
+# app_of_apps_repo_url = "git@github.com:yahav876/multi-tenant-manifest.git"
+# app_of_apps_repo_revision = "HEAD"
+# app_of_apps_path = "applications/company-a/production"
+
+# # === ADDITIONAL APPLICATIONS ===
+# # Define additional applications that ArgoCD should manage
+# additional_applications = [
+#   {
+#     name           = "sample-app"
+#     namespace      = "argocd"
+#     repo_url       = "git@github.com:yahav876/multi-tenant-manifest.git"
+#     target_revision = "HEAD"
+#     path           = "applications/sample-app"
+#     dest_namespace = "services"
+#     project        = "default"
+#   },
+#   {
+#     name           = "monitoring"
+#     namespace      = "argocd"
+#     repo_url       = "git@github.com:yahav876/multi-tenant-manifest.git"
+#     target_revision = "HEAD"
+#     path           = "monitoring"
+#     dest_namespace = "monitoring"
+#     project        = "default"
+#     sync_policy = {
+#       automated = {
+#         prune       = true
+#         self_heal   = true
+#         allow_empty = false
+#       }
+#       sync_options = [
+#         "CreateNamespace=true",
+#         "PrunePropagationPolicy=foreground",
+#         "PruneLast=true",
+#         "ServerSideApply=true"
+#       ]
+#     }
+#   }
+# ]
