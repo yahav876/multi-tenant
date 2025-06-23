@@ -70,81 +70,37 @@ output "cluster_master_version" {
   value       = module.gke.master_version
 }
 
-# Monitoring Information
+# ArgoCD Information
+output "argocd_namespace" {
+  description = "Kubernetes namespace for ArgoCD"
+  value       = module.argocd.namespace
+}
+
+output "argocd_release_name" {
+  description = "Name of the ArgoCD Helm release"
+  value       = module.argocd.release_name
+}
+
+output "argocd_server_url" {
+  description = "ArgoCD server URL"
+  value       = module.argocd.argocd_server_url
+}
+
+output "argocd_admin_password_command" {
+  description = "Command to get the ArgoCD admin password"
+  value       = module.argocd.argocd_admin_password_command
+}
+
+output "argocd_port_forward_command" {
+  description = "Command to port-forward to ArgoCD server"
+  value       = module.argocd.argocd_port_forward_command
+}
+
 output "monitoring_namespace" {
-  description = "Kubernetes namespace for monitoring stack"
-  value       = module.prometheus.namespace
+  description = "Kubernetes namespace for monitoring stack (managed by ArgoCD)"
+  value       = var.monitoring_namespace
 }
 
-output "prometheus_release_status" {
-  description = "Status of the Prometheus Helm release"
-  value       = module.prometheus.release_status
-}
-
-output "grafana_release_status" {
-  description = "Status of the Grafana Helm release"
-  value       = module.grafana.release_status
-}
-
-output "prometheus_url" {
-  description = "Internal URL for Prometheus"
-  value       = module.prometheus.prometheus_url
-}
-
-output "grafana_service_info" {
-  description = "Information about accessing Grafana"
-  value       = module.grafana.service_info
-}
-
-# Connection Commands
-output "kubectl_config_command" {
-  description = "Command to configure kubectl for this cluster"
-  value       = module.gke.kubectl_config_command
-}
-
-output "grafana_access_info" {
-  description = "Instructions for accessing Grafana"
-  value = var.use_ingress ? {
-    username = module.grafana.admin_user
-    password_note = "Password is set in terraform.tfvars"
-    url = var.grafana_enable_ssl && length(var.grafana_ssl_domains) > 0 ? "https://${var.grafana_ssl_domains[0]}" : "http://${module.grafana_ingress[0].static_ip_address}"
-    static_ip = module.grafana_ingress[0].static_ip_address
-    ssl_certificate = var.grafana_enable_ssl ? module.grafana_ingress[0].ssl_certificate_name : null
-  } : {
-    username = module.grafana.admin_user
-    password_note = "Password is set in terraform.tfvars"
-    loadbalancer_ip_command = "kubectl get svc grafana -n ${module.prometheus.namespace} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'"
-    port_forward_command = "kubectl port-forward -n ${module.prometheus.namespace} svc/grafana 3000:80"
-  }
-}
-
-# Additional ingress outputs when using ingress
-output "grafana_ingress_info" {
-  description = "Grafana ingress information (only when use_ingress = true)"
-  value = var.use_ingress ? {
-    static_ip_address = module.grafana_ingress[0].static_ip_address
-    ingress_name = module.grafana_ingress[0].ingress_name
-    ssl_enabled = var.grafana_enable_ssl
-    ssl_domains = var.grafana_ssl_domains
-    load_balancer_type = var.grafana_lb_type
-    dns_setup_required = length(var.grafana_ssl_domains) > 0
-  } : null
-}
-
-output "dns_setup_instructions" {
-  description = "DNS setup instructions for SSL certificates"
-  value = var.use_ingress && length(var.grafana_ssl_domains) > 0 ? {
-    message = "To complete SSL certificate setup, create DNS A records:"
-    records = [
-      for domain in var.grafana_ssl_domains : {
-        domain = domain
-        type = "A"
-        value = module.grafana_ingress[0].static_ip_address
-      }
-    ]
-    note = "SSL certificates will be active 15-20 minutes after DNS propagation"
-  } : null
-}
 
 # Summary Information
 output "deployment_summary" {
@@ -157,7 +113,20 @@ output "deployment_summary" {
     cluster_name     = module.gke.cluster_name
     cluster_location = module.gke.cluster_location
     vpc_network      = module.vpc.network_name
-    monitoring_stack = "Prometheus + Grafana"
+    gitops_tool      = "ArgoCD"
+    monitoring_stack = "kube-prometheus-stack (managed by ArgoCD)"
     node_pools       = module.gke.node_pools_names
+  }
+}
+
+# ArgoCD Access Instructions
+output "argocd_access_info" {
+  description = "Information about accessing ArgoCD"
+  value = {
+    admin_username           = "admin"
+    get_password_command     = module.argocd.argocd_admin_password_command
+    port_forward_command     = module.argocd.argocd_port_forward_command
+    git_repository          = var.monitoring_repo_url
+    monitoring_app_path     = var.monitoring_app_path
   }
 }

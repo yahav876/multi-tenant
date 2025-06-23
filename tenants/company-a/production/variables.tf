@@ -85,88 +85,165 @@ variable "enable_binary_authorization" {
   type        = bool
 }
 
-# Monitoring Configuration
+# Monitoring Configuration (for ArgoCD managed monitoring)
 variable "monitoring_namespace" {
   description = "Kubernetes namespace for monitoring stack"
   type        = string
 }
 
-# Prometheus Configuration
-variable "prometheus_chart_version" {
-  description = "Version of the kube-prometheus-stack Helm chart"
+# ArgoCD Configuration
+variable "argocd_chart_version" {
+  description = "Version of the ArgoCD Helm chart"
+  type        = string
+  default     = "5.51.6"
+}
+
+variable "argocd_version" {
+  description = "ArgoCD application version"
+  type        = string
+  default     = "v2.9.3"
+}
+
+variable "argocd_service_type" {
+  description = "Service type for ArgoCD server (ClusterIP, NodePort, LoadBalancer)"
+  type        = string
+  default     = "LoadBalancer"
+}
+
+variable "argocd_service_annotations" {
+  description = "Annotations for the ArgoCD server service"
+  type        = map(string)
+  default     = {}
+}
+
+variable "argocd_enable_ingress" {
+  description = "Enable ingress for ArgoCD server"
+  type        = bool
+  default     = false
+}
+
+variable "argocd_ingress_hosts" {
+  description = "Ingress hosts for ArgoCD"
+  type        = list(string)
+  default     = []
+}
+
+variable "argocd_ingress_annotations" {
+  description = "Annotations for the ArgoCD ingress"
+  type        = map(string)
+  default     = {}
+}
+
+variable "argocd_server_url" {
+  description = "ArgoCD server URL"
+  type        = string
+  default     = ""
+}
+
+# ArgoCD Server Resource Configuration
+variable "argocd_server_cpu_request" {
+  description = "CPU request for ArgoCD server"
+  type        = string
+  default     = "100m"
+}
+
+variable "argocd_server_memory_request" {
+  description = "Memory request for ArgoCD server"
+  type        = string
+  default     = "128Mi"
+}
+
+variable "argocd_server_cpu_limit" {
+  description = "CPU limit for ArgoCD server"
+  type        = string
+  default     = "500m"
+}
+
+variable "argocd_server_memory_limit" {
+  description = "Memory limit for ArgoCD server"
+  type        = string
+  default     = "512Mi"
+}
+
+# ArgoCD Controller Resource Configuration
+variable "argocd_controller_cpu_request" {
+  description = "CPU request for ArgoCD controller"
+  type        = string
+  default     = "250m"
+}
+
+variable "argocd_controller_memory_request" {
+  description = "Memory request for ArgoCD controller"
+  type        = string
+  default     = "256Mi"
+}
+
+variable "argocd_controller_cpu_limit" {
+  description = "CPU limit for ArgoCD controller"
+  type        = string
+  default     = "500m"
+}
+
+variable "argocd_controller_memory_limit" {
+  description = "Memory limit for ArgoCD controller"
+  type        = string
+  default     = "512Mi"
+}
+
+# ArgoCD Repo Server Resource Configuration
+variable "argocd_repo_cpu_request" {
+  description = "CPU request for ArgoCD repo server"
+  type        = string
+  default     = "100m"
+}
+
+variable "argocd_repo_memory_request" {
+  description = "Memory request for ArgoCD repo server"
+  type        = string
+  default     = "128Mi"
+}
+
+variable "argocd_repo_cpu_limit" {
+  description = "CPU limit for ArgoCD repo server"
+  type        = string
+  default     = "1000m"
+}
+
+variable "argocd_repo_memory_limit" {
+  description = "Memory limit for ArgoCD repo server"
+  type        = string
+  default     = "1Gi"
+}
+
+# Git Repository Configuration for ArgoCD
+variable "monitoring_repo_url" {
+  description = "Git repository URL for monitoring manifests"
   type        = string
 }
 
-variable "prometheus_retention" {
-  description = "Prometheus data retention period"
+variable "monitoring_repo_revision" {
+  description = "Git repository revision/branch for monitoring manifests"
   type        = string
+  default     = "HEAD"
 }
 
-variable "prometheus_storage_size" {
-  description = "Storage size for Prometheus data"
+variable "monitoring_app_path" {
+  description = "Path in the Git repository for monitoring manifests"
   type        = string
+  default     = "monitoring"
 }
 
-variable "prometheus_cpu_request" {
-  description = "CPU request for Prometheus"
+variable "git_ssh_private_key" {
+  description = "SSH private key for Git repository access"
   type        = string
-}
-
-variable "prometheus_memory_request" {
-  description = "Memory request for Prometheus"
-  type        = string
-}
-
-variable "prometheus_cpu_limit" {
-  description = "CPU limit for Prometheus"
-  type        = string
-}
-
-variable "prometheus_memory_limit" {
-  description = "Memory limit for Prometheus"
-  type        = string
-}
-
-# Grafana Configuration
-variable "grafana_chart_version" {
-  description = "Version of the Grafana Helm chart"
-  type        = string
-}
-
-variable "grafana_admin_user" {
-  description = "Grafana admin username"
-  type        = string
-}
-
-variable "grafana_admin_password" {
-  description = "Grafana admin password"
-  type        = string
+  default     = null
   sensitive   = true
 }
 
-variable "grafana_storage_size" {
-  description = "Storage size for Grafana data"
-  type        = string
-}
-
-variable "grafana_cpu_request" {
-  description = "CPU request for Grafana"
-  type        = string
-}
-
-variable "grafana_memory_request" {
-  description = "Memory request for Grafana"
-  type        = string
-}
-
-variable "grafana_cpu_limit" {
-  description = "CPU limit for Grafana"
-  type        = string
-}
-
-variable "grafana_memory_limit" {
-  description = "Memory limit for Grafana"
-  type        = string
+variable "create_monitoring_app" {
+  description = "Whether to create the monitoring ArgoCD application"
+  type        = bool
+  default     = true
 }
 
 # Infrastructure Configuration
@@ -175,13 +252,8 @@ variable "storage_class" {
   type        = string
 }
 
-variable "load_balancer_type" {
-  description = "Load balancer type for Grafana service (Internal or External)"
-  type        = string
-}
-
 variable "node_selector" {
-  description = "Node selector for monitoring workloads"
+  description = "Node selector for workloads"
   type        = map(string)
   default     = {}
 }
@@ -192,34 +264,3 @@ variable "common_labels" {
   type        = map(string)
 }
 
-# === NEW VARIABLES FOR INGRESS CONFIGURATION ===
-
-# Ingress Configuration
-variable "use_ingress" {
-  description = "Use Ingress with GCP Load Balancer instead of LoadBalancer service"
-  type        = bool
-  default     = false
-}
-
-# Grafana Ingress Configuration
-variable "grafana_enable_ssl" {
-  description = "Enable SSL/TLS for Grafana with managed certificates"
-  type        = bool
-  default     = true
-}
-
-variable "grafana_ssl_domains" {
-  description = "List of domains for Grafana SSL certificates (e.g., ['grafana.example.com'])"
-  type        = list(string)
-  default     = []
-}
-
-variable "grafana_lb_type" {
-  description = "Load balancer type for Grafana ingress (External or Internal)"
-  type        = string
-  default     = "External"
-  validation {
-    condition     = contains(["External", "Internal"], var.grafana_lb_type)
-    error_message = "grafana_lb_type must be either 'External' or 'Internal'."
-  }
-}

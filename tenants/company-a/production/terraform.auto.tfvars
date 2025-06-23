@@ -32,47 +32,47 @@ initial_node_count   = 1                # Start with just 1 node initially
 # Security
 enable_binary_authorization = true
 
-# === MONITORING CONFIGURATION ===
+# === ARGOCD CONFIGURATION ===
+# ArgoCD will manage the monitoring stack via GitOps
 monitoring_namespace = "monitoring"
 
-# Prometheus settings
-prometheus_chart_version  = "56.0.0"
-prometheus_retention      = "30d"
-prometheus_storage_size   = "10Gi"
-prometheus_cpu_request    = "100m"
-prometheus_memory_request = "128Mi"
-prometheus_cpu_limit      = "2000m"
-prometheus_memory_limit   = "8Gi"
+# ArgoCD Basic Settings
+argocd_chart_version = "5.51.6"
+argocd_version      = "v2.9.3"
+argocd_service_type = "LoadBalancer"
 
-# Grafana settings
-grafana_chart_version   = "7.3.0"
-grafana_admin_user      = "admin"
-grafana_admin_password  = "secure-password-123"  # Use a strong password!
-grafana_storage_size    = "10Gi"
-grafana_cpu_request     = "100m"
-grafana_memory_request  = "128Mi"
-grafana_cpu_limit       = "500m"
-grafana_memory_limit    = "1Gi"
+# ArgoCD Resource Configuration
+argocd_server_cpu_request     = "100m"
+argocd_server_memory_request  = "128Mi"
+argocd_server_cpu_limit       = "500m"
+argocd_server_memory_limit    = "512Mi"
+
+argocd_controller_cpu_request    = "250m"
+argocd_controller_memory_request = "256Mi"
+argocd_controller_cpu_limit      = "500m"
+argocd_controller_memory_limit   = "512Mi"
+
+argocd_repo_cpu_request    = "100m"
+argocd_repo_memory_request = "128Mi"
+argocd_repo_cpu_limit      = "1000m"
+argocd_repo_memory_limit   = "1Gi"
+
+# Git Repository Configuration for kube-prometheus-stack
+monitoring_repo_url      = "git@github.com:yahav876/multi-tenant-manifest.git"
+monitoring_repo_revision = "HEAD"
+monitoring_app_path      = "monitoring"
+
+# Disable monitoring app creation initially to avoid circular dependency
+create_monitoring_app = false
+
+# SSH key will be provided separately for private repo access
+# git_ssh_private_key = "..."  # Add your SSH private key here
 
 # Infrastructure settings - GKE Storage Classes
-# NOTE: Existing PVCs use "standard" - changing requires manual migration
-# GKE provides these storage classes by default:
-# - "standard" - Standard persistent disk (HDD) - CURRENTLY USED
-# - "standard-rwo" - Standard persistent disk (HDD) with ReadWriteOnce  
-# - "premium-rwo" - SSD persistent disk with ReadWriteOnce (recommended for new deployments)
-# - "fast-ssd" - Custom fast SSD class (created by our Terraform)
-# - "balanced-ssd" - Custom balanced SSD class (created by our Terraform)
-storage_class      = "standard"     # Keep existing for now - migration required for change
-load_balancer_type = "Internal"     # Use "External" for public access
+# ArgoCD will deploy monitoring with persistent storage
+storage_class = "standard"     # Will be used by ArgoCD-deployed monitoring stack
 
-# To migrate to SSD storage:
-# 1. Backup data: kubectl exec -n monitoring deployment/grafana -- tar -czf /tmp/grafana-backup.tar.gz /var/lib/grafana
-# 2. Delete PVC: kubectl delete pvc grafana -n monitoring
-# 3. Change storage_class to "premium-rwo" here
-# 4. Apply: tofu apply
-# 5. Restore data if needed
-
-# Node selector for monitoring workloads (optional)
+# Node selector for workloads (optional)
 #node_selector = {
 #  "cloud.google.com/gke-nodepool" = "primary-pool"
 #}
@@ -85,13 +85,4 @@ common_labels = {
   team        = "platform"
   cost_center = "engineering"
 }
-
-# === INGRESS CONFIGURATION ===
-# Set to true to use Ingress with GCP Load Balancer instead of LoadBalancer service
-use_ingress = true
-
-# Grafana Ingress Configuration
-grafana_enable_ssl   = true
-grafana_ssl_domains  = ["grafana.example.com"]  # REPLACE with your domain
-grafana_lb_type      = "External"               # Change to "Internal" for internal-only access
 

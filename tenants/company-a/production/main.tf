@@ -151,6 +151,20 @@ module "gke" {
   depends_on = [module.vpc]
 }
 
+# Create ArgoCD namespace
+resource "kubernetes_namespace" "argocd" {
+  metadata {
+    name = "argocd"
+    labels = {
+      name        = "argocd"
+      company     = var.company
+      environment = var.environment
+      purpose     = "gitops"
+    }
+  }
+  depends_on = [module.gke]
+}
+
 resource "kubernetes_namespace" "monitoring" {
   metadata {
     name = "monitoring"
@@ -178,132 +192,56 @@ resource "kubernetes_namespace" "services" {
 }
 
 
-# Deploy Prometheus and Grafana using our modules
-module "prometheus" {
-  source = "../../../modules/prometheus-helm"
+# Deploy ArgoCD for GitOps
+module "argocd" {
+  source = "../../../modules/argocd-helm"
 
-  company     = var.company
-  environment = var.environment
-  namespace   = var.monitoring_namespace
-  
-  # Prometheus configuration
-  chart_version  = var.prometheus_chart_version
-  retention      = var.prometheus_retention
-  storage_size   = var.prometheus_storage_size
-  cpu_request    = var.prometheus_cpu_request
-  memory_request = var.prometheus_memory_request
-  cpu_limit      = var.prometheus_cpu_limit
-  memory_limit   = var.prometheus_memory_limit
-  
+  # Basic configuration
+  namespace       = "argocd"
+  chart_version   = var.argocd_chart_version
+  argocd_version  = var.argocd_version
+  create_namespace = false  # We create it separately below
+
+  # Service configuration
+  service_type = var.argocd_service_type
+  service_annotations = var.argocd_service_annotations
+
+  # Ingress configuration
+  enable_ingress       = var.argocd_enable_ingress
+  ingress_hosts        = var.argocd_ingress_hosts
+  ingress_annotations  = var.argocd_ingress_annotations
+  server_url          = var.argocd_server_url
+
+  # Resource configuration
+  server_cpu_request     = var.argocd_server_cpu_request
+  server_memory_request  = var.argocd_server_memory_request
+  server_cpu_limit       = var.argocd_server_cpu_limit
+  server_memory_limit    = var.argocd_server_memory_limit
+
+  controller_cpu_request    = var.argocd_controller_cpu_request
+  controller_memory_request = var.argocd_controller_memory_request
+  controller_cpu_limit      = var.argocd_controller_cpu_limit
+  controller_memory_limit   = var.argocd_controller_memory_limit
+
+  repo_server_cpu_request    = var.argocd_repo_cpu_request
+  repo_server_memory_request = var.argocd_repo_memory_request
+  repo_server_cpu_limit      = var.argocd_repo_cpu_limit
+  repo_server_memory_limit   = var.argocd_repo_memory_limit
+
+  # Monitoring application configuration
+  create_monitoring_app    = var.create_monitoring_app
+  monitoring_repo_url      = var.monitoring_repo_url
+  monitoring_repo_revision = var.monitoring_repo_revision
+  monitoring_app_path      = var.monitoring_app_path
+  monitoring_namespace     = var.monitoring_namespace
+
+  # Git repository configuration
+  git_repo_url        = var.monitoring_repo_url
+  git_ssh_private_key = var.git_ssh_private_key
+
   # Infrastructure configuration
-  storage_class = var.storage_class
   node_selector = var.node_selector
   labels        = local.common_labels
-  
-  # Create namespace and wait for GKE cluster
-  create_namespace = false
-  depends_on = [module.gke, kubernetes_namespace.monitoring]
-}
 
-module "grafana" {
-  source = "../../../modules/grafana-helm"
-
-  company     = var.company
-  environment = var.environment
-  namespace   = var.monitoring_namespace
-  
-  # Grafana configuration
-  chart_version  = var.grafana_chart_version
-  admin_user     = var.grafana_admin_user
-  admin_password = var.grafana_admin_password
-  storage_size   = var.grafana_storage_size
-  cpu_request    = var.grafana_cpu_request
-  memory_request = var.grafana_memory_request
-  cpu_limit      = var.grafana_cpu_limit
-  memory_limit   = var.grafana_memory_limit
-  
-  # Infrastructure configuration
-  storage_class      = var.storage_class
-  node_selector      = var.node_selector
-  service_type       = var.use_ingress ? "ClusterIP" : "LoadBalancer"
-  load_balancer_type = var.load_balancer_type
-  labels             = local.common_labels
-  
-  # Connect to Prometheus
-  prometheus_url = module.prometheus.prometheus_url
-  
-  # Don't create namespace, use the one from Prometheus module
-  create_namespace = false
-  depends_on = [module.prometheus, kubernetes_namespace.monitoring]
-}
-
-# GCP Load Balancer + Ingress for Grafana
-module "grafana_ingress" {
-  count  = var.use_ingress ? 1 : 0
-  source = "../../../modules/gcp-lb-ingress"
-  
-  # Basic Configuration
-  project_id   = var.gcp_project_id
-  name_prefix  = "${var.company}-${var.environment}-grafana"
-  namespace    = var.monitoring_namespace
-  network_name = module.vpc.network_name
-  
-  # SSL Configuration
-  enable_ssl             = var.grafana_enable_ssl
-  ssl_domains            = var.grafana_ssl_domains
-  allow_http             = !var.grafana_enable_ssl
-  redirect_http_to_https = var.grafana_enable_ssl
-  
-  # Ingress Rules - Route all traffic to Grafana service
-  ingress_rules = [
-    {
-      host = length(var.grafana_ssl_domains) > 0 ? var.grafana_ssl_domains[0] : ""
-      paths = [
-        {
-          path         = "/*"
-          path_type    = "ImplementationSpecific"
-          service_name = "grafana"
-          service_port = 80
-        }
-      ]
-    }
-  ]
-  
-  # Security Configuration - Restrict access to authorized networks
-  authorized_source_ranges = var.authorized_networks
-  target_tags             = ["gke-node", "${var.company}-${var.environment}"]
-  
-  # Load Balancer Configuration
-  load_balancer_type = var.grafana_lb_type
-  create_static_ip   = true
-  
-  # Advanced Backend Configuration
-  create_backend_config           = true
-  backend_timeout                 = 60
-  connection_draining_timeout     = 60
-  session_affinity_type          = "CLIENT_IP"  # Good for Grafana sessions
-  session_affinity_cookie_ttl    = 86400       # 24 hours
-  
-  # Health Check Configuration
-  health_check_path               = "/api/health"
-  health_check_port               = 80
-  health_check_interval           = 10
-  health_check_timeout            = 5
-  health_check_healthy_threshold  = 2
-  health_check_unhealthy_threshold = 3
-  health_check_type              = "HTTP"
-  
-  # Security
-  create_health_check_firewall   = true
-  create_access_firewall         = true
-  
-  # Labels
-  labels = merge(local.common_labels, {
-    component = "monitoring"
-    app       = "grafana"
-    tier      = "frontend"
-  })
-  
-  # Dependencies
-  depends_on = [module.grafana, module.vpc]
+  depends_on = [module.gke, kubernetes_namespace.argocd]
 }
