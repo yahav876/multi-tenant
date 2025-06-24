@@ -263,6 +263,13 @@ variable "app_of_apps_path" {
   default     = "."
 }
 
+variable "app_of_apps_path_services" {
+  description = "Path in the Git repository for App of Apps services manifests"
+  type        = string
+  default     = "services"
+}
+
+
 variable "additional_applications" {
   description = "List of additional applications to create"
   type        = list(any)

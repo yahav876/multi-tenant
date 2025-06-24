@@ -112,7 +112,7 @@ resource "kubernetes_manifest" "app_of_apps_services" {
       source = {
         repoURL        = var.app_of_apps_repo_url
         targetRevision = var.app_of_apps_repo_revision
-        path           = "services/"
+        path           = var.app_of_apps_path_services
         kustomize      = {}
       }
       destination = {

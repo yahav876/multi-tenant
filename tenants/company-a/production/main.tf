@@ -101,6 +101,7 @@ module "argocd" {
   app_of_apps_repo_url       = var.app_of_apps_repo_url
   app_of_apps_repo_revision  = var.app_of_apps_repo_revision
   app_of_apps_path           = var.app_of_apps_path
+  app_of_apps_path_services  = var.app_of_apps_path_services
   additional_applications    = var.additional_applications
   labels                     = local.common_labels
 

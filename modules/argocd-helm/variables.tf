@@ -57,8 +57,15 @@ variable "app_of_apps_repo_revision" {
 variable "app_of_apps_path" {
   description = "Path in the Git repository for App of Apps manifests"
   type        = string
-  default     = "applications"
+  default     = "monitoring"
 }
+
+variable "app_of_apps_path_services" {
+  description = "Path in the Git repository for App of Apps services manifests"
+  type        = string
+  default     = "services"
+}
+
 
 # Additional Applications Configuration
 variable "additional_applications" {
