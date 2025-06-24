@@ -1,4 +1,4 @@
-# File: providers/gcp/provider.tf
+# File: tenants/company-a/production/provider.tf
 
 terraform {
   required_providers {
@@ -21,6 +21,7 @@ terraform {
   }
 }
 
+
 provider "google" {
   project = var.gcp_project_id
   region  = var.gcp_region
@@ -32,6 +33,21 @@ provider "google-beta" {
   region  = var.gcp_region
   zone    = var.gcp_zone
 }
+
+provider "kubernetes" {
+  host                   = "https://${module.gke.cluster_endpoint}"
+  token                  = data.google_client_config.default.access_token
+  cluster_ca_certificate = base64decode(module.gke.cluster_ca_certificate)
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = "https://${module.gke.cluster_endpoint}"
+    token                  = data.google_client_config.default.access_token
+    cluster_ca_certificate = base64decode(module.gke.cluster_ca_certificate)
+  }
+}
+
 
 # Variables used by the provider
 variable "gcp_project_id" {
