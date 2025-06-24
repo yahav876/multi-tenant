@@ -149,4 +149,5 @@ create_app_of_apps = true
 app_of_apps_repo_url = "git@github.com:yahav876/multi-tenant-manifest.git"
 app_of_apps_repo_revision = "HEAD"
 app_of_apps_path = "monitoring/"
+app_of_apps_path_services = "services/"
 additional_applications = []
