@@ -97,3 +97,9 @@ To update the Helm charts to newer versions:
 1. Update the chart version variables in `terraform.tfvars`
 2. Run `terraform plan` to see the changes
 3. Apply the changes with `terraform apply`
+4. Install CRD's - 
+   ```
+   for crd in alertmanagerconfigs alertmanagers podmonitors probes prometheusagents prometheuses prometheusrules scrapeconfigs servicemonitors thanosrulers; do
+   kubectl create -f "https://raw.githubusercontent.com/prometheus-community/helm-charts/refs/tags/kube-prometheus-stack-75.5.0/charts/kube-prometheus-stack/charts/crds/crds/crd-${crd}.yaml"
+   done
+   ```
