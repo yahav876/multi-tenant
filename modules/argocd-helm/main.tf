@@ -95,6 +95,12 @@ resource "kubernetes_manifest" "app_of_apps" {
 
 resource "kubernetes_manifest" "app_of_apps_services" {
   count = var.create_app_of_apps ? 1 : 0
+    lifecycle {
+    ignore_changes = [
+      manifest.metadata[0].finalizers
+    ]
+  }
+
   manifest = {
     apiVersion = "argoproj.io/v1alpha1"
     kind       = "Application"
@@ -138,7 +144,8 @@ resource "kubernetes_manifest" "app_of_apps_services" {
             factor      = 2
             maxDuration = "3m"
           }
-        }
+        },
+        
       }
     }
   }
