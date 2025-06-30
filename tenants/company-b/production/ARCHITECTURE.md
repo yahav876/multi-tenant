@@ -97,7 +97,7 @@ RDS Security Group:
 EKS Cluster: innovate-inc-production
 ├── Version: 1.31
 ├── Auto Mode: Enabled
-├── Endpoint Access: Private + Public (restricted)
+├── Endpoint Access: Private + (VPN Accessible)
 └── Add-ons:
     ├── VPC CNI (networking)
     ├── CoreDNS (DNS)
@@ -115,20 +115,11 @@ NodePools:
   - name: general-mixed
     instanceTypes: 
       - m5.large, m5a.large    # x86
-      - m6g.large, m6gd.large  # ARM64 (20-40% cheaper)
+      - m6g.large, m6g.xlarge  # ARM64 (20-40% cheaper)
     capacityTypes: [spot, on-demand]
     limits:
       cpu: 1000
       memory: 1000Gi
-    
-  # Frontend/API - Burstable
-  - name: web-tier
-    instanceTypes: [t3.medium, t3a.medium, t4g.medium]
-    capacityTypes: [spot]
-    taints:
-      - key: workload
-        value: web
-        effect: NoSchedule
     
   # Backend Processing - Stable
   - name: backend-stable
@@ -186,14 +177,11 @@ GitOps with ArgoCD:
 │   ├── /environments
 │   │   ├── staging/
 │   │   │   ├── kustomization.yaml
-│   │   │   ├── namespace.yaml
 │   │   │   ├── patches/
 │   │   │   │   ├── backend-patch.yaml
 │   │   │   │   └── frontend-patch.yaml
-│   │   │   └── secrets/          # Sealed Secrets
 │   │   └── production/
 │   │       ├── kustomization.yaml
-│   │       ├── namespace.yaml
 │   │       ├── patches/
 │   │       │   ├── backend-patch.yaml
 │   │       │   ├── frontend-patch.yaml
@@ -201,7 +189,6 @@ GitOps with ArgoCD:
 │   │       ├── policies/         # Network/Security Policies
 │   │       │   ├── network-policy.yaml
 │   │       │   └── pod-security-policy.yaml
-│   │       └── secrets/          # Sealed Secrets
 │   └── /charts                   # Helm charts
 │       └── common-services/
 │
@@ -225,7 +212,7 @@ GitOps with ArgoCD:
 │   └── RBAC Configuration:
 │       ├── Dev Team: Read-only prod, Full staging
 │       ├── SRE Team: Full access all environments
-│       └── CI/CD: Deploy to staging only
+│       └── CI/CD: Deploy automatically to staging only
 │
 ├── Deployment Workflow:
 │   ├── 1. Developer Push:
@@ -245,7 +232,6 @@ GitOps with ArgoCD:
 │   └── 4. Rollback Process:
 │       ├── ArgoCD UI: Previous version
 │       ├── Git revert: production/ changes
-│       └── Break glass: kubectl access
 │
 └── Security & Compliance:
     ├── Git Repository:
@@ -253,9 +239,8 @@ GitOps with ArgoCD:
     │   ├── Signed Commits: GPG required
     │   └── Audit Log: All changes tracked
     ├── Secrets Management:
-    │   ├── Sealed Secrets: Encrypted in git
-    │   ├── External Secrets Operator: AWS Secrets Manager
-    │   └── Rotation: Automated via Lambda
+    │   ├── Hashicorp vault: Secret/TLS/Keys Management
+    │   └── Rotation: Configurable
     ├── Image Security:
     │   ├── Admission Controller: OPA Gatekeeper
     │   ├── Image Scanning: Fail on HIGH/CRITICAL
@@ -265,50 +250,6 @@ GitOps with ArgoCD:
         ├── Approval Process: PR + ArgoCD manual
         ├── Audit Trail: CloudTrail + ArgoCD events
         └── Backup: Git repo + ArgoCD config backups
-```
-
-#### Production-Grade Deployment Example:
-```yaml
-# production/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-namespace: production
-
-resources:
-  - namespace.yaml
-  - ../../base/backend
-  - ../../base/frontend
-  - secrets/sealed-secrets.yaml
-  - policies/network-policy.yaml
-  - policies/pod-disruption-budget.yaml
-
-patchesStrategicMerge:
-  - patches/backend-patch.yaml
-  - patches/frontend-patch.yaml
-  - patches/resource-limits.yaml
-  - patches/anti-affinity.yaml
-
-configMapGenerator:
-  - name: app-config
-    literals:
-      - ENVIRONMENT=production
-      - LOG_LEVEL=info
-      - DATABASE_POOL_SIZE=20
-
-images:
-  - name: backend
-    newName: 123456789.dkr.ecr.us-west-2.amazonaws.com/backend
-    newTag: v1.2.3  # Explicit version, no 'latest'
-  - name: frontend
-    newName: 123456789.dkr.ecr.us-west-2.amazonaws.com/frontend
-    newTag: v1.2.3
-
-replicas:
-  - name: backend-deployment
-    count: 3  # HA configuration
-  - name: frontend-deployment
-    count: 3
 ```
 
 ## 4. Database - Amazon RDS for PostgreSQL
@@ -324,8 +265,8 @@ RDS PostgreSQL:
 │   ├── Type: GP3 SSD
 │   ├── Size: 100 GB (autoscaling to 1TB)
 │   └── IOPS: 3000 (burstable)
-├── Encryption: AWS KMS (customer managed key)
-└── Network: Private subnets only
+├── Encryption: AWS KMS 
+└── Network: Database Private subnets only
 ```
 
 ### 4.2 Backup Strategy
@@ -342,7 +283,7 @@ Manual Snapshots:
 └── Cross-Region Copy: us-east-1 (DR)
 ```
 
-### 4.3 High Availability & Disaster Recovery
+### 4.3 High Availability & Disaster Recovery 
 
 1. **Multi-AZ Deployment**: Automatic failover in <60 seconds
 2. **Read Replicas**: 2 replicas for read scaling
@@ -377,34 +318,21 @@ Manual Snapshots:
 
 - **Encryption at Rest**: AWS KMS for RDS, EBS, S3
 - **Encryption in Transit**: TLS 1.3 everywhere
-- **Secrets Management**: AWS Secrets Manager + External Secrets Operator
+- **Secrets Management**: Hashicorp Vault 
 - **Database Credentials**: IAM database authentication
 
 ## 6. Cost Optimization Strategy
 
 ### 6.1 Compute Optimization
-- **Spot Instances**: 70% of workload on spot (saves ~60%)
+- **Spot Instances**: Right % usage for stateless apps
 - **ARM64 Instances**: Graviton2/3 for 20-40% savings
 - **Karpenter**: Right-sized instances, aggressive consolidation
-
+ 
 ### 6.2 Database Optimization
 - **Reserved Instances**: 1-year commitment for RDS (30% savings)
 - **Graviton2**: db.r6g instances (15% cheaper)
 - **Storage**: GP3 vs GP2 (20% savings)
-
-### 6.3 Estimated Monthly Costs
-
-| Service | Configuration | Estimated Cost |
-|---------|--------------|----------------|
-| EKS Cluster | 1 cluster | $73 |
-| EC2 (Spot) | ~10 mixed instances | $150-300 |
-| RDS PostgreSQL | db.r6g.large Multi-AZ | $380 |
-| Load Balancer | 1 ALB | $25 |
-| NAT Gateways | 3 (HA) | $135 |
-| Data Transfer | ~1TB/month | $90 |
-| **Total** | | **~$850-1000/month** |
-
-*Note: Costs scale with usage. Initial deployment may be 50% lower.*
+2
 
 ## 7. CI/CD Architecture
 
@@ -425,27 +353,9 @@ GitHub Actions Pipeline:
 ## 8. Monitoring & Observability
 
 - **Metrics**: Prometheus + Grafana
-- **Logs**: CloudWatch Logs + Elasticsearch
-- **Traces**: AWS X-Ray / OpenTelemetry
+- **Logs**: CloudWatch Logs/Fluentd/Loki 
+- **Traces**: OpenTelemetry
 - **Alerts**: PagerDuty integration
-
-## 9. Implementation Roadmap
-
-### Phase 1: Foundation (Week 1-2)
-- [ ] Setup AWS accounts and networking
-- [ ] Deploy EKS cluster with Karpenter
-- [ ] Configure RDS PostgreSQL
-
-### Phase 2: Application (Week 3-4)
-- [ ] Containerize applications
-- [ ] Setup CI/CD pipeline
-- [ ] Deploy to staging
-
-### Phase 3: Production (Week 5-6)
-- [ ] Security hardening
-- [ ] Load testing
-- [ ] Production deployment
-- [ ] Monitoring setup
 
 ## 10. Conclusion
 
@@ -457,14 +367,6 @@ This architecture provides Innovate Inc. with:
 - **Simplicity**: Managed services reduce operational overhead
 
 The use of EKS with Karpenter provides the flexibility to handle rapid growth while maintaining cost control. The GitOps approach ensures reliable, auditable deployments, and the multi-account strategy provides the necessary isolation for a growing startup.
-
-## Appendix: Terraform Implementation
-
-The complete Terraform code for this architecture is available in this repository, featuring:
-- Modular design for reusability
-- Environment-specific configurations
-- Comprehensive documentation
-- Security best practices
 
 To deploy:
 ```bash
