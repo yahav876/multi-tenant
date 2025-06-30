@@ -44,6 +44,106 @@ This directory contains the Terraform configuration for Company B's production i
    terraform apply
    ```
 
+4. Deploy applications to specific architectures:
+
+   After the infrastructure is deployed, developers can deploy applications to specific node architectures based on the custom NodePools defined in terraform.tfvars.
+
+   **Update kubeconfig first:**
+   ```bash
+   aws eks update-kubeconfig --region us-west-2 --name company-b-production-eks
+   ```
+
+   **Method 1: Using NodeSelector (Recommended)**
+   ```yaml
+   # nginx-x86-deployment.yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: nginx-x86
+     namespace: default
+   spec:
+     replicas: 3
+     selector:
+       matchLabels:
+         app: nginx-x86
+     template:
+       metadata:
+         labels:
+           app: nginx-x86
+       spec:
+         # Schedule on x86 nodes using Kubernetes standard label
+         nodeSelector:
+           kubernetes.io/arch: amd64  # Standard k8s label (automatic)
+           # OR use our custom label from Karpenter NodePool:
+           # arch-type: x86
+         containers:
+         - name: nginx
+           image: nginx:latest
+           ports:
+           - containerPort: 80
+           resources:
+             requests:
+               cpu: "100m"
+               memory: "128Mi"
+             limits:
+               cpu: "500m"
+               memory: "512Mi"
+   ```
+
+   **Method 2: Using Karpenter Requirements (Pod Affinity)**
+   ```yaml
+   # nginx-graviton-deployment.yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: nginx-graviton
+     namespace: default
+   spec:
+     replicas: 3
+     selector:
+       matchLabels:
+         app: nginx-graviton
+     template:
+       metadata:
+         labels:
+           app: nginx-graviton
+       spec:
+         # Using node affinity for more complex requirements
+         affinity:
+           nodeAffinity:
+             requiredDuringSchedulingIgnoredDuringExecution:
+               nodeSelectorTerms:
+               - matchExpressions:
+                 - key: kubernetes.io/arch
+                   operator: In
+                   values: ["arm64"]
+                 - key: karpenter.sh/nodepool
+                   operator: In
+                   values: ["graviton-nodepool"]
+         containers:
+         - name: nginx
+           image: nginx:latest  
+           ports:
+           - containerPort: 80
+           resources:
+             requests:
+               cpu: "100m"
+               memory: "128Mi"
+             limits:
+               cpu: "500m"
+               memory: "512Mi"
+   ```
+
+
+   **Deploy the application:**
+   ```bash
+   # For x86 deployment
+   kubectl apply -f nginx-x86-deployment.yaml
+
+   # For Graviton deployment
+   kubectl apply -f nginx-graviton-deployment.yaml
+
+
 ## Configuration Files
 
 - `main.tf` - Main Terraform configuration with module calls
