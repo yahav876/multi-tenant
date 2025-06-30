@@ -61,11 +61,11 @@ eks_cluster_version = "1.31"
 cluster_endpoint_public_access  = true
 cluster_endpoint_private_access = true
 # IMPORTANT: Restrict this in production to your IP ranges
-cluster_endpoint_public_access_cidrs = ["77.137.76.244/32"]
+cluster_endpoint_public_access_cidrs = ["77.137.70.63/32"]
 
 # EKS Auto Mode Configuration
 eks_auto_mode_enabled = true
-eks_auto_mode_node_pools = ["system", "general"]
+eks_auto_mode_node_pools = [] #["system", "general"]
 
 # Karpenter Configuration
 enable_karpenter = true

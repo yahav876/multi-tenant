@@ -77,10 +77,10 @@ variable "eks_addon_versions" {
     eks_pod_identity_agent = string
   })
   default = {
-    coredns                = "v1.11.3-eksbuild.1"
+    coredns                = "v1.11.4-eksbuild.14"
     kube_proxy            = "v1.31.0-eksbuild.5"
-    vpc_cni               = "v1.16.0-eksbuild.1"
-    aws_ebs_csi_driver    = "v1.30.0-eksbuild.1"
+    vpc_cni               = "v1.19.6-eksbuild.1"
+    aws_ebs_csi_driver    = "v1.45.0-eksbuild.2"
     eks_pod_identity_agent = "v1.3.0-eksbuild.1"
   }
 }
