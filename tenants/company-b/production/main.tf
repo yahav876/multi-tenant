@@ -82,11 +82,3 @@ module "eks_auto_mode" {
   # Depends on VPC being created first
   depends_on = [module.vpc]
 }
-
-# Example: Additional modules can be added here
-# module "monitoring_stack" {
-#   source = "../../../modules/monitoring-stack"
-#   
-#   environment = var.environment
-#   company     = var.company
-# }

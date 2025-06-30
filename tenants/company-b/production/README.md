@@ -13,12 +13,8 @@ This directory contains the Terraform configuration for Company B's production i
 
 ### VPC (Virtual Private Cloud)
 - **Module**: `../../../modules/AWS/Network/vpc`
-- **Features**:
-  - 3 Availability Zones for high availability
-  - 3 Private subnets (10.20.1.0/24, 10.20.2.0/24, 10.20.3.0/24)
-  - 3 Public subnets (10.20.101.0/24, 10.20.102.0/24, 10.20.103.0/24)
-  - NAT Gateway in each AZ for high availability
-  - EKS-ready subnet tagging
+### EKS (Auto-Mode)
+- **Module**: `../../../modules/AWS/Compute/eks-automode`
 
 ## Prerequisites
 
