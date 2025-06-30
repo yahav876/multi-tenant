@@ -45,6 +45,7 @@ module "eks_auto_mode" {
   subnet_ids = module.vpc.subnets_id_private
   
   # EKS Auto Mode configuration
+  eks_auto_mode_enabled    = var.eks_auto_mode_enabled
   eks_auto_mode_node_pools = var.eks_auto_mode_node_pools
   
   # Access configuration
@@ -66,6 +67,9 @@ module "eks_auto_mode" {
   
   # Disruption settings
   karpenter_disruption_settings = var.karpenter_disruption_settings
+  
+  # Custom NodePools
+  karpenter_node_pools = var.karpenter_node_pools
   
   # Tags
   tags = merge(

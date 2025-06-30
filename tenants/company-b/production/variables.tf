@@ -149,28 +149,16 @@ variable "cluster_endpoint_public_access_cidrs" {
 }
 
 # EKS Auto Mode Variables
+variable "eks_auto_mode_enabled" {
+  description = "Enable EKS Auto Mode"
+  type        = bool
+  default     = true
+}
+
 variable "eks_auto_mode_node_pools" {
-  description = "Configuration for EKS Auto Mode node pools"
-  type = list(object({
-    name                = string
-    instance_types      = optional(list(string))
-    scaling_config = optional(object({
-      min_size     = optional(number)
-      max_size     = optional(number)
-      desired_size = optional(number)
-    }))
-  }))
-  default = [
-    {
-      name = "system"
-      instance_types = ["t3.medium", "t3a.medium"]
-      scaling_config = {
-        min_size     = 2
-        max_size     = 6
-        desired_size = 3
-      }
-    }
-  ]
+  description = "List of node pool names for EKS Auto Mode"
+  type        = list(string)
+  default     = ["system", "general"]
 }
 
 # Karpenter Variables
@@ -242,4 +230,44 @@ variable "karpenter_disruption_settings" {
     consolidateAfter    = "30s"
     expireAfter        = "24h"
   }
+}
+
+# Custom Karpenter NodePools
+variable "karpenter_node_pools" {
+  description = "Map of custom Karpenter NodePools to create"
+  type = map(object({
+    # Instance configuration
+    instance_types = optional(list(string))
+    capacity_types = optional(list(string))
+    architectures  = optional(list(string))
+    
+    # Labels and Taints
+    labels = optional(map(string))
+    taints = optional(list(object({
+      key    = string
+      value  = optional(string)
+      effect = string
+    })))
+    
+    # Additional requirements
+    requirements = optional(list(object({
+      key      = string
+      operator = string
+      values   = list(string)
+    })))
+    
+    # Disruption settings (if different from default)
+    disruption = optional(object({
+      consolidationPolicy = optional(string)
+      consolidateAfter    = optional(string)
+      expireAfter        = optional(string)
+    }))
+    
+    # Resource limits (if different from default)
+    limits = optional(map(string))
+    
+    # EC2NodeClass name (if using a custom one)
+    node_class_name = optional(string)
+  }))
+  default = {}
 }

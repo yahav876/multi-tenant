@@ -22,44 +22,16 @@ variable "subnet_ids" {
 }
 
 # EKS Auto Mode Configuration
+variable "eks_auto_mode_enabled" {
+  description = "Enable EKS Auto Mode"
+  type        = bool
+  default     = true
+}
+
 variable "eks_auto_mode_node_pools" {
-  description = "List of EKS Auto Mode node pools"
-  type = list(object({
-    name                = string
-    instance_type       = optional(string)
-    scaling_config = optional(object({
-      min_size     = optional(number)
-      max_size     = optional(number)
-      desired_size = optional(number)
-    }))
-    update_config = optional(object({
-      max_unavailable_percentage = optional(number)
-    }))
-    remote_access = optional(object({
-      ec2_ssh_key               = optional(string)
-      source_security_group_ids = optional(list(string))
-    }))
-    disk_size      = optional(number)
-    instance_types = optional(list(string))
-    labels         = optional(map(string))
-    taints = optional(list(object({
-      key    = string
-      value  = optional(string)
-      effect = string
-    })))
-    tags = optional(map(string))
-  }))
-  default = [
-    {
-      name = "system"
-      instance_types = ["t3.medium"]
-      scaling_config = {
-        min_size     = 2
-        max_size     = 4
-        desired_size = 2
-      }
-    }
-  ]
+  description = "List of node pool names for EKS Auto Mode"
+  type        = list(string)
+  default     = ["system", "general"]
 }
 
 # Access Configuration

@@ -18,9 +18,12 @@ module "eks" {
   subnet_ids = var.subnet_ids
 
   # Enable EKS Auto Mode
-  cluster_compute_config = {
+  cluster_compute_config = var.eks_auto_mode_enabled ? {
     enabled    = true
     node_pools = var.eks_auto_mode_node_pools
+  } : {
+    enabled    = false
+    node_pools = []
   }
 
   # Access Configuration
