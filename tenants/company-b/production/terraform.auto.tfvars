@@ -103,6 +103,59 @@ karpenter_disruption_settings = {
   expireAfter        = "48h"   # Keep nodes longer in production
 }
 
+karpenter_node_pools = {
+  "x86-nodepool" = {
+    architectures  = ["amd64"]
+    capacity_types = ["spot", "on-demand"]
+    
+    # Labels for pod scheduling
+    labels = {
+      "karpenter.sh/nodepool"     = "x86-nodepool"
+      "node.kubernetes.io/arch"   = "amd64"
+      "arch-type"                 = "x86"
+    }
+    
+    # Resource limits
+    limits = {
+      cpu    = "1000"
+      memory = "1000Gi"
+    }
+    
+    # Disruption settings for cost optimization
+    disruption = {
+      consolidationPolicy = "WhenEmptyOrUnderutilized"
+      consolidateAfter    = "300s"
+      # expireAfter        = "2h"  # Rotate spot instances more frequently
+    }
+  },
+  
+  "graviton-nodepool" = {
+    architectures  = ["arm64"]
+    capacity_types = ["spot", "on-demand"]
+    
+    # Labels for pod scheduling
+    labels = {
+      "karpenter.sh/nodepool"     = "graviton-nodepool"
+      "node.kubernetes.io/arch"   = "arm64"
+      "arch-type"                 = "graviton"
+      "cost-tier"                 = "optimized"  # ARM is more cost-effective
+    }
+    
+    # Resource limits
+    limits = {
+      cpu    = "1000"
+      memory = "1000Gi"
+    }
+    
+    # More aggressive consolidation for ARM (cheaper)
+    disruption = {
+      consolidationPolicy = "WhenEmptyOrUnderutilized"
+      consolidateAfter    = "300s"
+      # expireAfter        = "2h" # Rotate spot instances more frequently
+    }
+  }
+}
+
 # Custom Karpenter NodePools (uncomment and modify as needed)
 # karpenter_node_pools = {
 #   "example-nodepool-full" = {
