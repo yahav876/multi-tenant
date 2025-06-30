@@ -53,29 +53,7 @@ This directory contains the Terraform configuration for Company B's production i
 - `backend.tf` - Remote state configuration
 - `outputs.tf` - Output values from modules
 
-## Outputs
-
-After applying, the following outputs will be available:
-- `vpc_id` - The ID of the created VPC
-- `vpc_cidr` - The CIDR block of the VPC
-- `private_subnet_ids` - List of private subnet IDs
-- `public_subnet_ids` - List of public subnet IDs
-- `availability_zones` - List of availability zones used
-
 ## Important Notes
 
 1. The VPC is configured with EKS-compatible tags for future Kubernetes deployments
 2. NAT Gateways are deployed in each AZ for high availability (production best practice)
-3. The CIDR range (10.20.0.0/16) is chosen to avoid conflicts with other environments
-
-## Cost Considerations
-
-- 3 NAT Gateways (one per AZ) will incur charges
-- Consider using a single NAT Gateway for non-critical environments to reduce costs
-
-## Next Steps
-
-After the VPC is created, you can:
-1. Deploy an EKS cluster using the Compute modules
-2. Set up monitoring with Prometheus and Grafana
-3. Configure additional security groups and network ACLs as needed
