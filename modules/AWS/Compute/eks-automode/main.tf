@@ -477,3 +477,69 @@ resource "kubectl_manifest" "karpenter_custom_node_pools" {
     kubectl_manifest.karpenter_node_class
   ]
 }
+
+# Auto Mode Custom NodePools - Applied when Karpenter is disabled but Auto Mode is enabled
+# These use the built-in Karpenter from EKS Auto Mode
+resource "kubectl_manifest" "auto_mode_custom_node_pools" {
+  for_each = !var.enable_karpenter && var.eks_auto_mode_enabled ? var.auto_mode_node_pools : {}
+
+  yaml_body = yamlencode({
+    apiVersion = "karpenter.sh/v1"
+    kind       = "NodePool"
+    metadata = {
+      name = each.key
+    }
+    spec = {
+      template = {
+        metadata = {
+          labels = each.value.labels != null ? each.value.labels : {}
+        }
+        spec = {
+          requirements = concat(
+            [
+              {
+                key      = "karpenter.sh/capacity-type"
+                operator = "In"
+                values   = each.value.capacity_types != null ? each.value.capacity_types : ["spot", "on-demand"]
+              },
+              {
+                key      = "node.kubernetes.io/instance-type"
+                operator = "In"
+                values   = each.value.instance_types != null ? each.value.instance_types : ["t3.medium", "t3.large"]
+              },
+              {
+                key      = "kubernetes.io/arch"
+                operator = "In"
+                values   = each.value.architectures != null ? each.value.architectures : ["amd64"]
+              }
+            ],
+            each.value.requirements != null ? each.value.requirements : []
+          )
+          
+          nodeClassRef = {
+            group = "karpenter.k8s.aws"
+            kind  = "EKSNodeClass"
+            name  = "default"  # Use Auto Mode's default EKSNodeClass
+          }
+          
+          taints = each.value.taints != null ? each.value.taints : []
+        }
+      }
+      
+      disruption = each.value.disruption != null ? each.value.disruption : {
+        consolidationPolicy = "WhenEmptyOrUnderutilized"
+        consolidateAfter    = "300s"
+        expireAfter        = "48h"
+      }
+      
+      limits = each.value.limits != null ? each.value.limits : {
+        cpu    = "1000"
+        memory = "1000Gi"
+      }
+    }
+  })
+
+  depends_on = [
+    module.eks  # Wait for Auto Mode cluster to be ready
+  ]
+}

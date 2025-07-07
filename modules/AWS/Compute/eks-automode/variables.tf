@@ -361,6 +361,43 @@ variable "karpenter_node_pools" {
   default = {}
 }
 
+# Auto Mode Custom NodePools Configuration (for Pure Auto Mode)
+variable "auto_mode_node_pools" {
+  description = "Map of custom NodePools to create for EKS Auto Mode (uses built-in Karpenter)"
+  type = map(object({
+    # Instance configuration
+    instance_types = optional(list(string))
+    capacity_types = optional(list(string))
+    architectures  = optional(list(string))
+    
+    # Labels and Taints
+    labels = optional(map(string))
+    taints = optional(list(object({
+      key    = string
+      value  = optional(string)
+      effect = string
+    })))
+    
+    # Additional requirements
+    requirements = optional(list(object({
+      key      = string
+      operator = string
+      values   = list(string)
+    })))
+    
+    # Disruption settings
+    disruption = optional(object({
+      consolidationPolicy = optional(string)
+      consolidateAfter    = optional(string)
+      expireAfter        = optional(string)
+    }))
+    
+    # Resource limits
+    limits = optional(map(string))
+  }))
+  default = {}
+}
+
 # IAM
 variable "iam_role_path" {
   description = "IAM role path"

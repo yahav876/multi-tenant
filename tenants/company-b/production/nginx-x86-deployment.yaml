@@ -15,11 +15,14 @@ spec:
       labels:
         app: nginx-x86
     spec:
-      # Schedule on x86 nodes using Kubernetes standard label
+      # Schedule on x86 nodes using tolerations and node selector
+      tolerations:
+        - key: arch-type
+          value: x86
+          effect: NoSchedule
       nodeSelector:
-        kubernetes.io/arch: amd64  # Standard k8s label (automatic)
-        # OR use our custom label from Karpenter NodePool:
-        # arch-type: x86
+        arch-type: x86
+        kubernetes.io/arch: amd64
       containers:
       - name: nginx
         image: nginx:latest

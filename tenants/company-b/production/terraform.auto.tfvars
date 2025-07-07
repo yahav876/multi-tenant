@@ -124,110 +124,100 @@ cluster_endpoint_private_access = true
 # IMPORTANT: Restrict this in production to your IP ranges
 cluster_endpoint_public_access_cidrs = ["5.29.9.128/32"]
 
-# EKS Auto Mode Configuration
+# EKS Auto Mode Configuration - Pure Auto Mode
 eks_auto_mode_enabled = true
+# Using built-in EKS Auto Mode NodePools only
 eks_auto_mode_node_pools = ["system", "general-purpose"]
 
-# Karpenter Configuration
-enable_karpenter = true
-karpenter_version = "1.0.6"
-create_default_karpenter_node_pool = false
+# Karpenter Configuration - Disabled for Pure Auto Mode
+enable_karpenter = false
+# karpenter_version = "1.0.6"
+# create_default_karpenter_node_pool = false
 
-# Karpenter tolerations to allow scheduling on EKS Auto Mode nodes
-karpenter_tolerations = [
-  {
-    key      = "CriticalAddonsOnly"
-    operator = "Exists"
-    effect   = "NoSchedule"
-  }
-]
+# Karpenter tolerations - Not needed in Pure Auto Mode
+# karpenter_tolerations = [
+#   {
+#     key      = "CriticalAddonsOnly"
+#     operator = "Exists"
+#     effect   = "NoSchedule"
+#   }
+# ]
 
-# Allow Karpenter to run on system nodes in EKS Auto Mode
-karpenter_node_selector = {
-  "karpenter.sh/nodepool" = "system"
-}
+# Karpenter node selector - Not needed in Pure Auto Mode
+# karpenter_node_selector = {
+#   "karpenter.sh/nodepool" = "system"
+# }
 
-# Karpenter Instance Types - Both x86 and ARM64
-karpenter_instance_types = [
-  # x86_64 instances for general workloads
-  "t3.medium", "t3.large", "t3.xlarge",
-  "t3a.medium", "t3a.large", "t3a.xlarge",
-  "m5.large", "m5.xlarge", "m5.2xlarge",
-  "m5a.large", "m5a.xlarge", "m5a.2xlarge",
-  "c5.large", "c5.xlarge", "c5.2xlarge",
-  # ARM64 instances for cost optimization
-  "t4g.medium", "t4g.large", "t4g.xlarge",
-  "m6g.large", "m6g.xlarge", "m6g.2xlarge",
-  "m6gd.large", "m6gd.xlarge",
-  "c6g.large", "c6g.xlarge", "c6g.2xlarge"
-]
-
-# Use both Spot and On-Demand for cost optimization
-karpenter_capacity_types = ["spot", "on-demand"]
-
-# Resource limits for production
-karpenter_limits = {
-  cpu    = "5000"     # 5,000 vCPUs
-  memory = "20000Gi"  # 20TB
-}
-
-# Disruption settings for production stability
-karpenter_disruption_settings = {
-  consolidationPolicy = "WhenEmptyOrUnderutilized"
-  consolidateAfter    = "60s"  # Wait longer in production
-  expireAfter        = "48h"   # Keep nodes longer in production
-}
-
-karpenter_node_pools = {
+# Pure EKS Auto Mode - Custom NodePools via Terraform
+# These NodePools will use EKS Auto Mode's built-in Karpenter
+auto_mode_node_pools = {
   "x86-nodepool" = {
-    architectures  = ["amd64"]
+    instance_types = ["t3.medium", "t3.large", "t3.xlarge", "m5.large", "m5.xlarge", "c5.large", "c5.xlarge"]
     capacity_types = ["spot", "on-demand"]
+    architectures  = ["amd64"]
     
-    # Labels for pod scheduling
     labels = {
-      "node.kubernetes.io/arch"   = "amd64"
-      "arch-type"                 = "x86"
+      "arch-type"      = "x86"
+      "workload-type"  = "general"
+      "billing-team"   = "company-b"
     }
     
-    # Resource limits
-    limits = {
-      cpu    = "1000"
-      memory = "1000Gi"
-    }
+    taints = [
+      {
+        key    = "arch-type"
+        value  = "x86"
+        effect = "NoSchedule"
+      }
+    ]
     
-    # Disruption settings for cost optimization
     disruption = {
       consolidationPolicy = "WhenEmptyOrUnderutilized"
       consolidateAfter    = "300s"
-      # expireAfter        = "2h"  # Rotate spot instances more frequently
+      expireAfter        = "48h"
+    }
+    
+    limits = {
+      cpu    = "1000"
+      memory = "1000Gi"
     }
   },
   
   "graviton-nodepool" = {
-    architectures  = ["arm64"]
+    instance_types = ["t4g.medium", "t4g.large", "t4g.xlarge", "m6g.large", "m6g.xlarge", "c6g.large", "c6g.xlarge"]
     capacity_types = ["spot", "on-demand"]
+    architectures  = ["arm64"]
     
-    # Labels for pod scheduling
     labels = {
-      "node.kubernetes.io/arch"   = "arm64"
-      "arch-type"                 = "graviton"
-      "cost-tier"                 = "optimized"  # ARM is more cost-effective
+      "arch-type"      = "graviton"
+      "workload-type"  = "general"
+      "cost-tier"      = "optimized"
+      "billing-team"   = "company-b"
     }
     
-    # Resource limits
+    taints = [
+      {
+        key    = "arch-type"
+        value  = "graviton"
+        effect = "NoSchedule"
+      }
+    ]
+    
+    disruption = {
+      consolidationPolicy = "WhenEmptyOrUnderutilized"
+      consolidateAfter    = "300s"
+      expireAfter        = "24h"  # More aggressive rotation for cost savings
+    }
+    
     limits = {
       cpu    = "1000"
       memory = "1000Gi"
     }
-    
-    # More aggressive consolidation for ARM (cheaper)
-    disruption = {
-      consolidationPolicy = "WhenEmptyOrUnderutilized"
-      consolidateAfter    = "300s"
-      # expireAfter        = "2h" # Rotate spot instances more frequently
-    }
   }
 }
+
+# All Karpenter Terraform configuration disabled in Pure Auto Mode:
+# - enable_karpenter = false
+# - Custom NodePools managed via auto_mode_node_pools above
 
 # Custom Karpenter NodePools (uncomment and modify as needed)
 # karpenter_node_pools = {

@@ -1,0 +1,42 @@
+# x86 NodePool for EKS Auto Mode
+# Apply after Terraform deployment: kubectl apply -f nodepool-x86.yaml
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: x86-nodepool
+spec:
+  template:
+    metadata:
+      labels:
+        arch-type: x86
+        workload-type: general
+        billing-team: company-b
+    spec:
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values: ["t3.medium", "t3.large", "t3.xlarge", "m5.large", "m5.xlarge", "c5.large", "c5.xlarge"]
+        - key: karpenter.k8s.aws/instance-generation
+          operator: Gt
+          values: ["3"]
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EKSNodeClass
+        name: default
+      taints:
+        - key: arch-type
+          value: x86
+          effect: NoSchedule
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 300s
+    expireAfter: 48h
+  limits:
+    cpu: 1000
+    memory: 1000Gi

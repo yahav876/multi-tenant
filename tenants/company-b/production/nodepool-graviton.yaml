@@ -1,0 +1,43 @@
+# Graviton (ARM64) NodePool for EKS Auto Mode  
+# Apply after Terraform deployment: kubectl apply -f nodepool-graviton.yaml
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: graviton-nodepool
+spec:
+  template:
+    metadata:
+      labels:
+        arch-type: graviton
+        workload-type: general
+        cost-tier: optimized
+        billing-team: company-b
+    spec:
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"]
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["arm64"]
+        - key: node.kubernetes.io/instance-type
+          operator: In
+          values: ["t4g.medium", "t4g.large", "t4g.xlarge", "m6g.large", "m6g.xlarge", "c6g.large", "c6g.xlarge"]
+        - key: karpenter.k8s.aws/instance-generation
+          operator: Gt
+          values: ["3"]
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EKSNodeClass
+        name: default
+      taints:
+        - key: arch-type
+          value: graviton
+          effect: NoSchedule
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 300s
+    expireAfter: 24h  # More aggressive rotation for cost savings
+  limits:
+    cpu: 1000
+    memory: 1000Gi

@@ -15,18 +15,14 @@ spec:
       labels:
         app: nginx-graviton
     spec:
-      # Using node affinity for more complex requirements
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/arch
-                operator: In
-                values: ["arm64"]
-              - key: karpenter.sh/nodepool
-                operator: In
-                values: ["graviton-nodepool"]
+      # Schedule on Graviton nodes using tolerations and node selector
+      tolerations:
+        - key: arch-type
+          value: graviton
+          effect: NoSchedule
+      nodeSelector:
+        arch-type: graviton
+        kubernetes.io/arch: arm64
       containers:
       - name: nginx
         image: nginx:latest  

@@ -53,25 +53,22 @@ module "eks_auto_mode" {
   cluster_endpoint_private_access      = var.cluster_endpoint_private_access
   cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
   
-  # Enable Karpenter for advanced autoscaling
+  # Karpenter disabled in Pure Auto Mode
   enable_karpenter = var.enable_karpenter
-  karpenter_version = var.karpenter_version
-  karpenter_tolerations = var.karpenter_tolerations
-  karpenter_node_selector = var.karpenter_node_selector
   
-  # Karpenter node pool configuration
-  create_default_karpenter_node_pool = var.create_default_karpenter_node_pool
-  karpenter_instance_types = var.karpenter_instance_types
-  karpenter_capacity_types = var.karpenter_capacity_types
+  # Pure Auto Mode custom NodePools
+  auto_mode_node_pools = var.auto_mode_node_pools
   
-  # Resource limits for Karpenter
-  karpenter_limits = var.karpenter_limits
-  
-  # Disruption settings
-  karpenter_disruption_settings = var.karpenter_disruption_settings
-  
-  # Custom NodePools
-  karpenter_node_pools = var.karpenter_node_pools
+  # All Karpenter-specific configurations commented out for Pure Auto Mode
+  # karpenter_version = var.karpenter_version
+  # karpenter_tolerations = var.karpenter_tolerations
+  # karpenter_node_selector = var.karpenter_node_selector
+  # create_default_karpenter_node_pool = var.create_default_karpenter_node_pool
+  # karpenter_instance_types = var.karpenter_instance_types
+  # karpenter_capacity_types = var.karpenter_capacity_types
+  # karpenter_limits = var.karpenter_limits
+  # karpenter_disruption_settings = var.karpenter_disruption_settings
+  # karpenter_node_pools = var.karpenter_node_pools
   
   # EKS Addons Configuration
   enable_default_addons = var.enable_default_addons
