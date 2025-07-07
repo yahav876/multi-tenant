@@ -17,12 +17,24 @@ spec:
     spec:
       # Schedule on x86 nodes using tolerations and node selector
       tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+          effect: NoSchedule
         - key: arch-type
           value: x86
           effect: NoSchedule
       nodeSelector:
-        arch-type: x86
+        karpenter.sh/nodepool: x86-nodepool
         kubernetes.io/arch: amd64
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: karpenter.sh/nodepool
+                operator: In
+                values:
+                - x86-nodepool
       containers:
       - name: nginx
         image: nginx:latest

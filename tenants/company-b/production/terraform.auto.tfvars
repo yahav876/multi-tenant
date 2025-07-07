@@ -156,6 +156,24 @@ auto_mode_node_pools = {
     capacity_types = ["spot", "on-demand"]
     architectures  = ["amd64"]
     
+    requirements = [
+      {
+        key      = "eks.amazonaws.com/instance-category"
+        operator = "In"
+        values   = ["c", "m", "t"]
+      },
+      {
+        key      = "eks.amazonaws.com/instance-generation"
+        operator = "Gt"
+        values   = ["4"]
+      },
+      {
+        key      = "kubernetes.io/os"
+        operator = "In"
+        values   = ["linux"]
+      }
+    ]
+    
     labels = {
       "arch-type"      = "x86"
       "workload-type"  = "general"
@@ -186,6 +204,24 @@ auto_mode_node_pools = {
     instance_types = ["t4g.medium", "t4g.large", "t4g.xlarge", "m6g.large", "m6g.xlarge", "c6g.large", "c6g.xlarge"]
     capacity_types = ["spot", "on-demand"]
     architectures  = ["arm64"]
+    
+    requirements = [
+      {
+        key      = "eks.amazonaws.com/instance-category"
+        operator = "In"
+        values   = ["c", "m", "t"]
+      },
+      {
+        key      = "eks.amazonaws.com/instance-generation"
+        operator = "Gt"
+        values   = ["4"]
+      },
+      {
+        key      = "kubernetes.io/os"
+        operator = "In"
+        values   = ["linux"]
+      }
+    ]
     
     labels = {
       "arch-type"      = "graviton"

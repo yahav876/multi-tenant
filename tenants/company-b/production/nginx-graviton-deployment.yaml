@@ -17,12 +17,24 @@ spec:
     spec:
       # Schedule on Graviton nodes using tolerations and node selector
       tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+          effect: NoSchedule
         - key: arch-type
           value: graviton
           effect: NoSchedule
       nodeSelector:
-        arch-type: graviton
+        karpenter.sh/nodepool: graviton-nodepool
         kubernetes.io/arch: arm64
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: karpenter.sh/nodepool
+                operator: In
+                values:
+                - graviton-nodepool
       containers:
       - name: nginx
         image: nginx:latest  
