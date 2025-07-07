@@ -163,6 +163,15 @@ resource "aws_iam_role_policy_attachment" "eks_auto_mode_fleet_policy" {
   role       = module.eks.node_iam_role_name
 }
 
+# Create service-linked role for EC2 Spot instances
+resource "aws_iam_service_linked_role" "spot" {
+  count            = var.enable_karpenter ? 1 : 0
+  aws_service_name = "spot.amazonaws.com"
+  description      = "Service-linked role for EC2 Spot instances used by Karpenter"
+
+  tags = var.tags
+}
+
 # EBS CSI Driver IRSA
 module "ebs_csi_driver_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"

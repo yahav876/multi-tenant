@@ -1,0 +1,41 @@
+# nginx-graviton-deployment.yaml
+# Test deployment for ARM64/Graviton architecture nodes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-graviton
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-graviton
+  template:
+    metadata:
+      labels:
+        app: nginx-graviton
+    spec:
+      # Using node affinity for more complex requirements
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/arch
+                operator: In
+                values: ["arm64"]
+              - key: karpenter.sh/nodepool
+                operator: In
+                values: ["graviton-nodepool"]
+      containers:
+      - name: nginx
+        image: nginx:latest  
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"

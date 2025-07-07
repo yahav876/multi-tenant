@@ -1,0 +1,34 @@
+# nginx-x86-deployment.yaml
+# Test deployment for x86/amd64 architecture nodes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-x86
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-x86
+  template:
+    metadata:
+      labels:
+        app: nginx-x86
+    spec:
+      # Schedule on x86 nodes using Kubernetes standard label
+      nodeSelector:
+        kubernetes.io/arch: amd64  # Standard k8s label (automatic)
+        # OR use our custom label from Karpenter NodePool:
+        # arch-type: x86
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
