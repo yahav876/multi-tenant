@@ -13,7 +13,7 @@ locals {
 
 # VPC Module
 module "vpc" {
-  source = "../../../modules/gcp-vpc"
+  source = "../../../modules/GCP/Network/gcp-vpc"
 
   gcp_project_id            = var.gcp_project_id
   gcp_region                = var.gcp_region
@@ -33,7 +33,7 @@ module "vpc" {
 
 # GKE Module
 module "gke" {
-  source = "../../../modules/gcp-gke"
+  source = "../../../modules/GCP/Compute/gcp-gke"
 
   project_id                      = var.gcp_project_id
   cluster_name                    = var.cluster_name
@@ -92,7 +92,7 @@ resource "kubernetes_namespace" "argocd" {
 
 # ArgoCD Module
 module "argocd" {
-  source = "../../../modules/argocd-helm"
+  source = "../../../modules/Helm/Devops-Platform/argocd-helm"
 
   chart_version                 = var.chart_version
   git_repo_url                  = var.git_repo_url
@@ -102,9 +102,32 @@ module "argocd" {
   app_of_apps_repo_revision     = var.app_of_apps_repo_revision
   app_of_apps_path              = var.app_of_apps_path
   app_of_apps_path_services     = var.app_of_apps_path_services
-  # app_of_apps_path_applications = var.app_of_apps_path_applications
+  app_of_apps_path_applications = var.app_of_apps_path_applications
   additional_applications       = var.additional_applications
   labels                        = local.common_labels
 
   depends_on = [module.gke, kubernetes_namespace.argocd]
+
 }
+
+
+# module "argocd_apps" {
+#   source = "../../../modules/Helm/Devops-Platform/argocd-app-of-apps"
+
+#   providers = {
+#     kubernetes = kubernetes.gke
+#   }
+
+#   create_app_of_apps        = var.create_app_of_apps
+#   argocd_namespace          = var.argocd_namespace
+#   app_of_apps_repo_url      = var.app_of_apps_repo_url
+#   app_of_apps_repo_revision = var.app_of_apps_repo_revision
+#   app_of_apps_path          = var.app_of_apps_path
+#   app_of_apps_path_services = var.app_of_apps_path_services
+#   labels                    = local.common_labels
+
+#   depends_on = [
+#     module.argocd
+#     # kubernetes_secret.repo_ssh_secret
+#   ]
+# }

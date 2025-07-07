@@ -145,3 +145,9 @@ output "update_kubeconfig_command" {
   description = "Command to update local kubeconfig"
   value       = "aws eks update-kubeconfig --region ${data.aws_region.current.name} --name ${module.eks.cluster_name}"
 }
+
+# EKS Auto Mode IAM Policy Outputs
+output "eks_auto_mode_fleet_policy_arn" {
+  description = "ARN of the EKS Auto Mode fleet management policy"
+  value       = var.eks_auto_mode_enabled ? aws_iam_policy.eks_auto_mode_fleet_policy[0].arn : null
+}

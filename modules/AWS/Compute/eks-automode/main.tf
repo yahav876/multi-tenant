@@ -40,7 +40,8 @@ module "eks" {
 
   # Cluster Addons
   cluster_addons = merge(
-    {
+    # Default addons (only if enabled)
+    var.enable_default_addons ? {
       coredns = {
         addon_version     = var.eks_addon_versions.coredns
         resolve_conflicts = "OVERWRITE"
@@ -62,7 +63,8 @@ module "eks" {
         addon_version     = var.eks_addon_versions.eks_pod_identity_agent
         resolve_conflicts = "OVERWRITE"
       }
-    },
+    } : {},
+    # Additional/custom addons from variable
     var.cluster_addons
   )
 
@@ -86,6 +88,79 @@ module "eks" {
 
   # Tags
   tags = var.tags
+}
+
+# Additional IAM policies for EKS Auto Mode
+# The EKS module creates the node role but doesn't attach all necessary policies for Auto Mode
+data "aws_iam_role" "eks_auto_mode_node_role" {
+  count = var.eks_auto_mode_enabled ? 1 : 0
+  name  = module.eks.node_iam_role_name
+}
+
+# Attach additional policies required for EKS Auto Mode functionality
+resource "aws_iam_role_policy_attachment" "eks_auto_mode_worker_node_policy" {
+  count      = var.eks_auto_mode_enabled ? 1 : 0
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+  role       = module.eks.node_iam_role_name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_auto_mode_cni_policy" {
+  count      = var.eks_auto_mode_enabled ? 1 : 0
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  role       = module.eks.node_iam_role_name
+}
+
+# Custom policy for EKS Auto Mode EC2 fleet management
+resource "aws_iam_policy" "eks_auto_mode_fleet_policy" {
+  count       = var.eks_auto_mode_enabled ? 1 : 0
+  name        = "${var.cluster_name}-eks-auto-mode-fleet-policy"
+  description = "Additional permissions required for EKS Auto Mode EC2 fleet management"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateFleet",
+          "ec2:DescribeFleets",
+          "ec2:DeleteFleets",
+          "ec2:ModifyFleet",
+          "ec2:CreateLaunchTemplate",
+          "ec2:CreateLaunchTemplateVersion",
+          "ec2:DescribeLaunchTemplates",
+          "ec2:DescribeLaunchTemplateVersions",
+          "ec2:DeleteLaunchTemplate",
+          "ec2:DeleteLaunchTemplateVersions",
+          "ec2:DescribeInstanceTypes",
+          "ec2:DescribeInstanceTypeOfferings",
+          "ec2:DescribeAvailabilityZones",
+          "ec2:DescribeSpotPriceHistory",
+          "ec2:RequestSpotFleet",
+          "ec2:DescribeSpotFleetRequests",
+          "ec2:DescribeSpotFleetInstances",
+          "ec2:CancelSpotFleetRequests",
+          "iam:PassRole"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole"
+        ]
+        Resource = module.eks.node_iam_role_arn
+      }
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "eks_auto_mode_fleet_policy" {
+  count      = var.eks_auto_mode_enabled ? 1 : 0
+  policy_arn = aws_iam_policy.eks_auto_mode_fleet_policy[0].arn
+  role       = module.eks.node_iam_role_name
 }
 
 # EBS CSI Driver IRSA
@@ -179,6 +254,45 @@ resource "helm_release" "karpenter" {
       }
       tolerations = var.karpenter_tolerations
       nodeSelector = var.karpenter_node_selector
+      # Override default node affinity to allow running on EKS Auto Mode system nodes
+      affinity = {
+        nodeAffinity = {
+          requiredDuringSchedulingIgnoredDuringExecution = {
+            nodeSelectorTerms = [
+              {
+                matchExpressions = [
+                  {
+                    key      = "karpenter.sh/nodepool"
+                    operator = "In"
+                    values   = ["system"]
+                  },
+                  {
+                    key      = "kubernetes.io/os"
+                    operator = "In"
+                    values   = ["linux"]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+        podAntiAffinity = {
+          preferredDuringSchedulingIgnoredDuringExecution = [
+            {
+              weight = 100
+              podAffinityTerm = {
+                labelSelector = {
+                  matchLabels = {
+                    "app.kubernetes.io/instance" = "karpenter"
+                    "app.kubernetes.io/name"     = "karpenter"
+                  }
+                }
+                topologyKey = "kubernetes.io/hostname"
+              }
+            }
+          ]
+        }
+      }
     })
   ]
 
@@ -246,7 +360,7 @@ resource "kubectl_manifest" "karpenter_node_pool" {
 
 # Karpenter EC2NodeClass
 resource "kubectl_manifest" "karpenter_node_class" {
-  count = var.enable_karpenter && var.create_default_karpenter_node_pool ? 1 : 0
+  count = var.enable_karpenter ? 1 : 0
 
   yaml_body = yamlencode({
     apiVersion = "karpenter.k8s.aws/v1"
@@ -309,12 +423,7 @@ resource "kubectl_manifest" "karpenter_custom_node_pools" {
     spec = {
       template = {
         metadata = {
-          labels = merge(
-            {
-              "karpenter.sh/nodepool" = each.key
-            },
-            each.value.labels != null ? each.value.labels : {}
-          )
+          labels = each.value.labels != null ? each.value.labels : {}
         }
         spec = {
           requirements = concat(

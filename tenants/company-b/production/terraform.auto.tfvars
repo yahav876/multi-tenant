@@ -36,13 +36,14 @@ one_nat_gateway_per_az = true  # High availability for production
 private_subnet_tags = {
   Type                              = "Private"
   "kubernetes.io/role/internal-elb" = "1"
-  "kubernetes.io/cluster/company-b-prod-eks" = "shared"  # Update cluster name as needed
+  "kubernetes.io/cluster/company-b-production-eks" = "shared"
+  "karpenter.sh/discovery" = "company-b-production-eks"
 }
 
 public_subnet_tags = {
   Type                     = "Public"
   "kubernetes.io/role/elb" = "1"
-  "kubernetes.io/cluster/company-b-prod-eks" = "shared"  # Update cluster name as needed
+  "kubernetes.io/cluster/company-b-production-eks" = "shared"
 }
 
 # Common tags
@@ -57,6 +58,66 @@ common_tags = {
 # EKS Configuration
 eks_cluster_version = "1.31"
 
+# EKS Addons Configuration
+enable_default_addons = true
+
+# Default addon versions
+eks_addon_versions = {
+  coredns                 = "v1.11.4-eksbuild.14"
+  kube_proxy              = "v1.31.0-eksbuild.5"
+  vpc_cni                 = "v1.19.6-eksbuild.1"
+  aws_ebs_csi_driver      = "v1.45.0-eksbuild.2"
+  eks_pod_identity_agent  = "v1.3.0-eksbuild.1"
+}
+
+# Additional custom addons (examples - uncomment and modify as needed)
+cluster_addons = {
+  # Example: AWS Load Balancer Controller
+  # aws-load-balancer-controller = {
+  #   addon_version     = "v1.8.1-eksbuild.1"
+  #   resolve_conflicts = "OVERWRITE"
+  #   configuration_values = jsonencode({
+  #     clusterName = "company-b-production-eks"
+  #     serviceAccount = {
+  #       annotations = {
+  #         "eks.amazonaws.com/role-arn" = "arn:aws:iam::ACCOUNT:role/AmazonEKSLoadBalancerControllerRole"
+  #       }
+  #     }
+  #   })
+  # }
+  
+  # Example: Amazon CloudWatch Observability
+  # amazon-cloudwatch-observability = {
+  #   addon_version     = "v1.5.1-eksbuild.1"
+  #   resolve_conflicts = "OVERWRITE"
+  # }
+  
+  # Example: AWS EFS CSI Driver
+  # aws-efs-csi-driver = {
+  #   addon_version     = "v1.7.4-eksbuild.1"
+  #   resolve_conflicts = "OVERWRITE"
+  #   service_account_role_arn = "arn:aws:iam::ACCOUNT:role/AmazonEKS_EFS_CSI_DriverRole"
+  # }
+  
+  # Example: AWS Secrets Store CSI Driver
+  # aws-secrets-store-csi-driver = {
+  #   addon_version     = "v1.3.4-eksbuild.1"
+  #   resolve_conflicts = "OVERWRITE"
+  # }
+  
+  # Example: AWS VPC CNI Plugin for Kubernetes with custom configuration
+  # vpc-cni = {
+  #   addon_version     = "v1.19.6-eksbuild.1"
+  #   resolve_conflicts = "OVERWRITE"
+  #   configuration_values = jsonencode({
+  #     env = {
+  #       ENABLE_PREFIX_DELEGATION = "true"
+  #       ENABLE_POD_ENI = "true"
+  #     }
+  #   })
+  # }
+}
+
 # EKS Access Configuration
 cluster_endpoint_public_access  = true
 cluster_endpoint_private_access = true
@@ -65,12 +126,26 @@ cluster_endpoint_public_access_cidrs = ["5.29.9.128/32"]
 
 # EKS Auto Mode Configuration
 eks_auto_mode_enabled = true
-eks_auto_mode_node_pools = ["system"]
+eks_auto_mode_node_pools = ["system", "general-purpose"]
 
 # Karpenter Configuration
 enable_karpenter = true
 karpenter_version = "1.0.6"
 create_default_karpenter_node_pool = false
+
+# Karpenter tolerations to allow scheduling on EKS Auto Mode nodes
+karpenter_tolerations = [
+  {
+    key      = "CriticalAddonsOnly"
+    operator = "Exists"
+    effect   = "NoSchedule"
+  }
+]
+
+# Allow Karpenter to run on system nodes in EKS Auto Mode
+karpenter_node_selector = {
+  "karpenter.sh/nodepool" = "system"
+}
 
 # Karpenter Instance Types - Both x86 and ARM64
 karpenter_instance_types = [
@@ -110,7 +185,6 @@ karpenter_node_pools = {
     
     # Labels for pod scheduling
     labels = {
-      "karpenter.sh/nodepool"     = "x86-nodepool"
       "node.kubernetes.io/arch"   = "amd64"
       "arch-type"                 = "x86"
     }
@@ -135,7 +209,6 @@ karpenter_node_pools = {
     
     # Labels for pod scheduling
     labels = {
-      "karpenter.sh/nodepool"     = "graviton-nodepool"
       "node.kubernetes.io/arch"   = "arm64"
       "arch-type"                 = "graviton"
       "cost-tier"                 = "optimized"  # ARM is more cost-effective

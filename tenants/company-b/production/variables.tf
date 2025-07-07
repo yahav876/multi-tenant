@@ -148,6 +148,49 @@ variable "cluster_endpoint_public_access_cidrs" {
   default     = ["0.0.0.0/0"]  # Restrict this in production
 }
 
+# EKS Addons Configuration
+variable "enable_default_addons" {
+  description = "Enable default EKS addons (coredns, kube-proxy, vpc-cni, aws-ebs-csi-driver, eks-pod-identity-agent)"
+  type        = bool
+  default     = true
+}
+
+variable "eks_addon_versions" {
+  description = "Map of EKS addon versions"
+  type = object({
+    coredns                = optional(string)
+    kube_proxy            = optional(string)
+    vpc_cni               = optional(string)
+    aws_ebs_csi_driver    = optional(string)
+    eks_pod_identity_agent = optional(string)
+  })
+  default = {
+    coredns                = "v1.11.4-eksbuild.14"
+    kube_proxy            = "v1.31.0-eksbuild.5"
+    vpc_cni               = "v1.19.6-eksbuild.1"
+    aws_ebs_csi_driver    = "v1.45.0-eksbuild.2"
+    eks_pod_identity_agent = "v1.3.0-eksbuild.1"
+  }
+}
+
+variable "cluster_addons" {
+  description = "Map of EKS addons to install with their configuration"
+  type = map(object({
+    addon_version               = optional(string)
+    resolve_conflicts          = optional(string)
+    resolve_conflicts_on_create = optional(string)
+    resolve_conflicts_on_update = optional(string)
+    service_account_role_arn   = optional(string)
+    configuration_values       = optional(string)
+    preserve                   = optional(bool)
+    tags                       = optional(map(string))
+  }))
+  default = {}
+}
+
+
+
+
 # EKS Auto Mode Variables
 variable "eks_auto_mode_enabled" {
   description = "Enable EKS Auto Mode"
@@ -172,6 +215,23 @@ variable "karpenter_version" {
   description = "Karpenter Helm chart version"
   type        = string
   default     = "1.0.6"
+}
+
+variable "karpenter_tolerations" {
+  description = "Tolerations for Karpenter pods"
+  type = list(object({
+    key      = string
+    operator = string
+    value    = optional(string)
+    effect   = string
+  }))
+  default = []
+}
+
+variable "karpenter_node_selector" {
+  description = "Node selector for Karpenter pods"
+  type        = map(string)
+  default     = {}
 }
 
 variable "create_default_karpenter_node_pool" {

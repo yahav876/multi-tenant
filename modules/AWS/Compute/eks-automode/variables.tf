@@ -66,15 +66,21 @@ variable "enable_cluster_creator_admin_permissions" {
   default     = true
 }
 
-# EKS Addons
+# EKS Addons Configuration
+variable "enable_default_addons" {
+  description = "Enable default EKS addons (coredns, kube-proxy, vpc-cni, aws-ebs-csi-driver, eks-pod-identity-agent)"
+  type        = bool
+  default     = true
+}
+
 variable "eks_addon_versions" {
   description = "Map of EKS addon versions"
   type = object({
-    coredns                = string
-    kube_proxy            = string
-    vpc_cni               = string
-    aws_ebs_csi_driver    = string
-    eks_pod_identity_agent = string
+    coredns                = optional(string)
+    kube_proxy            = optional(string)
+    vpc_cni               = optional(string)
+    aws_ebs_csi_driver    = optional(string)
+    eks_pod_identity_agent = optional(string)
   })
   default = {
     coredns                = "v1.11.4-eksbuild.14"
@@ -86,9 +92,18 @@ variable "eks_addon_versions" {
 }
 
 variable "cluster_addons" {
-  description = "Additional EKS addons to install"
-  type        = any
-  default     = {}
+  description = "Map of EKS addons to install with their configuration"
+  type = map(object({
+    addon_version               = optional(string)
+    resolve_conflicts          = optional(string)
+    resolve_conflicts_on_create = optional(string)
+    resolve_conflicts_on_update = optional(string)
+    service_account_role_arn   = optional(string)
+    configuration_values       = optional(string)
+    preserve                   = optional(bool)
+    tags                       = optional(map(string))
+  }))
+  default = {}
 }
 
 # Security Groups

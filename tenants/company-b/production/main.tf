@@ -56,6 +56,8 @@ module "eks_auto_mode" {
   # Enable Karpenter for advanced autoscaling
   enable_karpenter = var.enable_karpenter
   karpenter_version = var.karpenter_version
+  karpenter_tolerations = var.karpenter_tolerations
+  karpenter_node_selector = var.karpenter_node_selector
   
   # Karpenter node pool configuration
   create_default_karpenter_node_pool = var.create_default_karpenter_node_pool
@@ -70,6 +72,11 @@ module "eks_auto_mode" {
   
   # Custom NodePools
   karpenter_node_pools = var.karpenter_node_pools
+  
+  # EKS Addons Configuration
+  enable_default_addons = var.enable_default_addons
+  eks_addon_versions    = var.eks_addon_versions
+  cluster_addons        = var.cluster_addons
   
   # Tags
   tags = merge(
