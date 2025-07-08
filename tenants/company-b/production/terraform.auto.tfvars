@@ -152,7 +152,6 @@ enable_karpenter = false
 # These NodePools will use EKS Auto Mode's built-in Karpenter
 auto_mode_node_pools = {
   "x86-nodepool" = {
-    instance_types = ["t3.medium", "t3.large", "t3.xlarge", "m5.large", "m5.xlarge", "c5.large", "c5.xlarge"]
     capacity_types = ["spot", "on-demand"]
     architectures  = ["amd64"]
     
@@ -173,6 +172,9 @@ auto_mode_node_pools = {
         values   = ["linux"]
       }
     ]
+    
+    # Reference custom EC2NodeClass
+    node_class_name = "x86-nodeclass"
     
     labels = {
       "arch-type"      = "x86"
@@ -201,7 +203,6 @@ auto_mode_node_pools = {
   },
   
   "graviton-nodepool" = {
-    instance_types = ["t4g.medium", "t4g.large", "t4g.xlarge", "m6g.large", "m6g.xlarge", "c6g.large", "c6g.xlarge"]
     capacity_types = ["spot", "on-demand"]
     architectures  = ["arm64"]
     
@@ -222,6 +223,9 @@ auto_mode_node_pools = {
         values   = ["linux"]
       }
     ]
+    
+    # Reference custom EC2NodeClass
+    node_class_name = "graviton-nodeclass"
     
     labels = {
       "arch-type"      = "graviton"
@@ -247,6 +251,84 @@ auto_mode_node_pools = {
     limits = {
       cpu    = "1000"
       memory = "1000Gi"
+    }
+  }
+}
+
+# Custom EC2NodeClass for EKS Auto Mode NodePools
+auto_mode_node_classes = {
+  "x86-nodeclass" = {
+    ami_family = "AL2" # Amazon Linux 2
+    
+    # Instance requirements for x86 architecture  
+    instance_categories = ["c", "m", "t"]
+    instance_generations = ["5", "6", "7"]
+    
+    # Block device mappings
+    block_device_mappings = [
+      {
+        device_name = "/dev/xvda"
+        ebs = {
+          volume_size = 20
+          volume_type = "gp3"
+          delete_on_termination = true
+          encrypted = true
+        }
+      }
+    ]
+    
+    # Metadata options for enhanced security
+    metadata_options = {
+      http_endpoint = "enabled"
+      http_protocol_ipv6 = "disabled"
+      http_put_response_hop_limit = 2
+      http_tokens = "required"
+    }
+    
+    # User data for additional configuration
+    user_data = ""
+    
+    tags = {
+      "arch-type" = "x86"
+      "billing-team" = "company-b"
+    }
+  },
+  
+  "graviton-nodeclass" = {
+    ami_family = "AL2" # Amazon Linux 2
+    
+    # Instance requirements for ARM64/Graviton architecture
+    instance_categories = ["c", "m", "t"]
+    instance_generations = ["6", "7"] # Graviton2 and Graviton3
+    
+    # Block device mappings
+    block_device_mappings = [
+      {
+        device_name = "/dev/xvda"
+        ebs = {
+          volume_size = 20
+          volume_type = "gp3"
+          delete_on_termination = true
+          encrypted = true
+        }
+      }
+    ]
+    
+    # Metadata options for enhanced security
+    metadata_options = {
+      http_endpoint = "enabled"
+      http_protocol_ipv6 = "disabled"
+      http_put_response_hop_limit = 2
+      http_tokens = "required"
+    }
+    
+    # User data for additional configuration
+    user_data = ""
+    
+    tags = {
+      "arch-type" = "graviton"
+      "billing-team" = "company-b"
+      "cost-tier" = "optimized"
     }
   }
 }

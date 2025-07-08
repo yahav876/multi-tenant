@@ -443,11 +443,6 @@ resource "kubectl_manifest" "karpenter_custom_node_pools" {
                 values   = each.value.capacity_types != null ? each.value.capacity_types : ["spot", "on-demand"]
               },
               {
-                key      = "node.kubernetes.io/instance-type"
-                operator = "In"
-                values   = each.value.instance_types != null ? each.value.instance_types : var.karpenter_instance_types
-              },
-              {
                 key      = "kubernetes.io/arch"
                 operator = "In"
                 values   = each.value.architectures != null ? each.value.architectures : ["amd64", "arm64"]
@@ -503,11 +498,6 @@ resource "kubectl_manifest" "auto_mode_custom_node_pools" {
                 values   = each.value.capacity_types != null ? each.value.capacity_types : ["spot", "on-demand"]
               },
               {
-                key      = "node.kubernetes.io/instance-type"
-                operator = "In"
-                values   = each.value.instance_types != null ? each.value.instance_types : ["t3.medium", "t3.large"]
-              },
-              {
                 key      = "kubernetes.io/arch"
                 operator = "In"
                 values   = each.value.architectures != null ? each.value.architectures : ["amd64"]
@@ -517,9 +507,9 @@ resource "kubectl_manifest" "auto_mode_custom_node_pools" {
           )
           
           nodeClassRef = {
-            group = "karpenter.k8s.aws"
-            kind  = "EKSNodeClass"
-            name  = "default"  # Use Auto Mode's default EKSNodeClass
+            group = each.value.node_class_name != null ? "eks.amazonaws.com" : "karpenter.k8s.aws"
+            kind  = each.value.node_class_name != null ? "NodeClass" : "EKSNodeClass"
+            name  = each.value.node_class_name != null ? each.value.node_class_name : "default"
           }
           
           taints = each.value.taints != null ? each.value.taints : []
@@ -536,6 +526,108 @@ resource "kubectl_manifest" "auto_mode_custom_node_pools" {
         cpu    = "1000"
         memory = "1000Gi"
       }
+    }
+  })
+
+  depends_on = [
+    module.eks  # Wait for Auto Mode cluster to be ready
+  ]
+}
+
+# Auto Mode Custom NodeClass resources
+resource "kubectl_manifest" "auto_mode_custom_node_classes" {
+  for_each = !var.enable_karpenter && var.eks_auto_mode_enabled ? var.auto_mode_node_classes : {}
+
+  yaml_body = yamlencode({
+    apiVersion = "eks.amazonaws.com/v1"
+    kind       = "NodeClass"
+    metadata = {
+      name = each.key
+    }
+    spec = {
+      amiFamily = each.value.ami_family
+      
+      # Instance requirements
+      requirements = concat([
+        {
+          key      = "eks.amazonaws.com/instance-category"
+          operator = "In"
+          values   = each.value.instance_categories
+        },
+        {
+          key      = "eks.amazonaws.com/instance-generation"
+          operator = "In"
+          values   = each.value.instance_generations
+        },
+        {
+          key      = "kubernetes.io/arch"
+          operator = "In"
+          values   = each.value.architectures
+        }
+      ])
+      
+      # Block device mappings
+      blockDeviceMappings = length(each.value.block_device_mappings) > 0 ? [
+        for bdm in each.value.block_device_mappings : {
+          deviceName = bdm.device_name
+          ebs = {
+            volumeSize          = bdm.ebs.volume_size
+            volumeType          = bdm.ebs.volume_type
+            deleteOnTermination = bdm.ebs.delete_on_termination
+            encrypted           = bdm.ebs.encrypted
+          }
+        }
+      ] : [
+        {
+          deviceName = "/dev/xvda"
+          ebs = {
+            volumeSize          = 20
+            volumeType          = "gp3"
+            deleteOnTermination = true
+            encrypted           = true
+          }
+        }
+      ]
+      
+      # Metadata options
+      metadataOptions = {
+        httpEndpoint            = each.value.metadata_options.http_endpoint
+        httpProtocolIPv6        = each.value.metadata_options.http_protocol_ipv6
+        httpPutResponseHopLimit = each.value.metadata_options.http_put_response_hop_limit
+        httpTokens              = each.value.metadata_options.http_tokens
+      }
+      
+      # Subnet and security group configuration
+      subnetSelectorTerms = [
+        {
+          tags = {
+            "karpenter.sh/discovery" = var.cluster_name
+          }
+        }
+      ]
+      
+      securityGroupSelectorTerms = [
+        {
+          tags = {
+            "karpenter.sh/discovery" = var.cluster_name
+          }
+        }
+      ]
+      
+      # Instance role - use the Auto Mode node role
+      role = module.eks.node_iam_role_name
+      
+      # User data
+      userData = base64encode(each.value.user_data)
+      
+      # Tags applied to EC2 instances
+      tags = merge(
+        var.tags,
+        each.value.instance_tags,
+        {
+          NodeClass = each.key
+        }
+      )
     }
   })
 

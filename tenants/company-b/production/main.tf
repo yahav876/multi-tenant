@@ -56,8 +56,9 @@ module "eks_auto_mode" {
   # Karpenter disabled in Pure Auto Mode
   enable_karpenter = var.enable_karpenter
   
-  # Pure Auto Mode custom NodePools
+  # Pure Auto Mode custom NodePools and NodeClasses
   auto_mode_node_pools = var.auto_mode_node_pools
+  auto_mode_node_classes = var.auto_mode_node_classes
   
   # All Karpenter-specific configurations commented out for Pure Auto Mode
   # karpenter_version = var.karpenter_version

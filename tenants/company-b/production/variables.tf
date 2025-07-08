@@ -365,6 +365,51 @@ variable "auto_mode_node_pools" {
     
     # Resource limits
     limits = optional(map(string))
+    
+    # NodeClass reference  
+    node_class_name = optional(string, null)
+  }))
+  default = {}
+}
+
+# Auto Mode Node Classes
+variable "auto_mode_node_classes" {
+  description = "Custom NodeClass configurations for EKS Auto Mode"
+  type = map(object({
+    ami_family = optional(string, "AL2")
+    
+    # Instance requirements
+    instance_categories  = optional(list(string), ["c", "m", "t"])
+    instance_generations = optional(list(string), ["5", "6", "7"])
+    architectures       = optional(list(string), ["amd64"])
+    
+    # Block device mappings
+    block_device_mappings = optional(list(object({
+      device_name = string
+      ebs = object({
+        volume_size           = optional(number, 20)
+        volume_type          = optional(string, "gp3")
+        delete_on_termination = optional(bool, true)
+        encrypted            = optional(bool, true)
+      })
+    })), [])
+    
+    # Metadata options
+    metadata_options = optional(object({
+      http_endpoint               = optional(string, "enabled")
+      http_protocol_ipv6         = optional(string, "disabled")
+      http_put_response_hop_limit = optional(number, 2)
+      http_tokens                = optional(string, "required")
+    }), {})
+    
+    # User data
+    user_data = optional(string, "")
+    
+    # Instance profile
+    instance_profile = optional(string, null)
+    
+    # Additional tags for instances
+    instance_tags = optional(map(string), {})
   }))
   default = {}
 }
